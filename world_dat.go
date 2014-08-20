@@ -1,5 +1,9 @@
 package df2014
 
+import (
+	"fmt"
+)
+
 type WorldDat struct {
 	Version     uint32
 	Compression uint32
@@ -44,6 +48,10 @@ type WorldDat struct {
 		CreatureVariation []string
 		Interaction       []string
 	}
+
+	Unk005 [][14]uint32
+	Unk006 map[uint32]uint32
+	Unk007 [19][]uint32
 }
 
 func (r *Reader) WorldDat() (w WorldDat, err error) {
@@ -236,6 +244,84 @@ func (r *Reader) WorldDat() (w WorldDat, err error) {
 	w.StringTables.Interaction, err = stringList()
 	if err != nil {
 		return
+	}
+
+	length, err := r.Uint32()
+	w.Unk005 = make([][14]uint32, length)
+	for i := range w.Unk005 {
+		for j := range w.Unk005[i] {
+			w.Unk005[i][j], err = r.Uint32()
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	uint32Uint32Map := func() (m map[uint32]uint32, err error) {
+		length, err := r.Uint32()
+		if err != nil {
+			return
+		}
+
+		m = make(map[uint32]uint32, length)
+		for i := uint32(0); i < length; i++ {
+			var k, v uint32
+			k, err = r.Uint32()
+			if err != nil {
+				return
+			}
+
+			if _, ok := m[k]; ok {
+				err = fmt.Errorf("df2014: map already contains key %d (index %d)", k, i)
+				return
+			}
+
+			v, err = r.Uint32()
+			if err != nil {
+				return
+			}
+
+			m[k] = v
+		}
+
+		return
+	}
+
+	w.Unk006, err = uint32Uint32Map()
+	if err != nil {
+		return
+	}
+
+	uint32OrderedList := func() (l []uint32, err error) {
+		length, err := r.Uint32()
+		if err != nil {
+			return
+		}
+
+		l = make([]uint32, length)
+		for i := range l {
+			l[i], err = r.Uint32()
+			if err != nil {
+				return
+			}
+			if i > 0 && l[i-1] > l[i] {
+				err = fmt.Errorf("df2014: list out of order at index %d: %d > %d", i, l[i-1], l[i])
+				return
+			}
+			if i > 0 && l[i-1] == l[i] {
+				err = fmt.Errorf("df2014: list contains duplicate element at index %d: %d", i, l[i])
+				return
+			}
+		}
+
+		return
+	}
+
+	for i := range w.Unk007 {
+		w.Unk007[i], err = uint32OrderedList()
+		if err != nil {
+			return
+		}
 	}
 
 	return

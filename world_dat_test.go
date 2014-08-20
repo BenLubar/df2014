@@ -7,8 +7,16 @@ import (
 	"testing"
 )
 
-func TestWorldDat(t *testing.T) {
-	f, err := os.Open("work/df_linux/data/save/region1/world.dat")
+func TestRegion1WorldDat(t *testing.T) {
+	testWorldDat(t, "work/df_linux/data/save/region1/world.dat")
+}
+
+func TestRegion2WorldDat(t *testing.T) {
+	testWorldDat(t, "work/df_linux/data/save/region2/world.dat")
+}
+
+func testWorldDat(t *testing.T, fn string) {
+	f, err := os.Open(fn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +31,7 @@ func TestWorldDat(t *testing.T) {
 	t.Logf("%#v", w)
 
 	xxd := exec.Command("xxd")
-	xxd.Stdin = io.LimitReader(r, 128)
+	xxd.Stdin = io.LimitReader(r, 1<<10)
 	b, err := xxd.CombinedOutput()
 	if err != nil {
 		t.Fatal(err)
