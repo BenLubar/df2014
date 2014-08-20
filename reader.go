@@ -12,6 +12,21 @@ type Reader struct {
 	io.Reader
 }
 
+func (r *Reader) Bool() (b bool, err error) {
+	n, err := r.Uint8()
+	if err == nil {
+		switch n {
+		case 0:
+			b = false
+		case 1:
+			b = true
+		default:
+			err = fmt.Errorf("df2014: unexpected value for bool: %d", n)
+		}
+	}
+	return
+}
+
 func (r *Reader) Int8() (n int8, err error) {
 	err = binary.Read(r, binary.LittleEndian, &n)
 	return
@@ -80,6 +95,10 @@ func (r *Reader) Header() (version, compression uint32, err error) {
 		return 0, 0, err
 	}
 
+	if version != 1451 {
+		return 0, 0, fmt.Errorf("df2014: unhandled version %d", version)
+	}
+
 	compression, err = r.Uint32()
 	if err != nil {
 		return 0, 0, err
@@ -91,7 +110,7 @@ func (r *Reader) Header() (version, compression uint32, err error) {
 	case 1:
 		r.Reader = &compression1Reader{r: &Reader{r.Reader}}
 	default:
-		return 0, 0, fmt.Errorf("unhandled compression type %d", compression)
+		return 0, 0, fmt.Errorf("df2014: unhandled compression type %d", compression)
 	}
 
 	return

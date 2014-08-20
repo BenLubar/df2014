@@ -6,11 +6,16 @@ archive=df_40_09_linux.tar.bz2
 ulimit -c unlimited
 
 # delete the old work directory and make a new one with DF2014 in it.
-rm -rf work
-mkdir work
-cd work
-wget "http://www.bay12games.com/dwarves/$archive"
-tar xvf "$archive"
+if [ ! -e "work/$archive" ]
+then
+	rm -rf work
+	mkdir work
+	cd work
+	wget "http://www.bay12games.com/dwarves/$archive"
+	tar xvf "$archive"
+else
+	cd work
+fi
 
 cd df_linux
 
