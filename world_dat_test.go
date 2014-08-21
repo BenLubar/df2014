@@ -1,6 +1,7 @@
 package df2014
 
 import (
+	"github.com/kr/pretty"
 	"io"
 	"os"
 	"os/exec"
@@ -28,9 +29,9 @@ func testWorldDat(t *testing.T, fn string) {
 
 	err = r.Decode(&w)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	t.Logf("%#v", w)
+	t.Logf("%# v", pretty.Formatter(w))
 
 	xxd := exec.Command("xxd")
 	xxd.Stdin = io.LimitReader(r, 1<<10)

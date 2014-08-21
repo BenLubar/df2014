@@ -17,6 +17,8 @@ func (r *Reader) Decode(v interface{}) error {
 	return r.DecodeValue(reflect.ValueOf(v).Elem())
 }
 
+var bookListType = reflect.TypeOf([]Book(nil))
+
 func (r *Reader) DecodeValue(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Struct:
@@ -58,6 +60,15 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		return nil
 
 	case reflect.Slice:
+		if v.Type() == bookListType {
+			l, err := r.bookList()
+			if err != nil {
+				return err
+			}
+			v.Set(reflect.ValueOf(l))
+			return nil
+		}
+
 		var length uint32
 		err := binary.Read(r, binary.LittleEndian, &length)
 		if err != nil {

@@ -47,4 +47,6 @@ type WorldDat struct {
 	Unk005 [][14]uint32
 	Unk006 map[uint32]uint32
 	Unk007 [19]map[uint32]bool
+
+	Books []Book
 }
