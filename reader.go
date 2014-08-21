@@ -252,15 +252,6 @@ func (r *Reader) header() (h Header, err error) {
 	return
 }
 
-type Name struct {
-	First    string
-	Nick     string
-	Index    [7]int32
-	Form     [7]uint16
-	Language uint32
-	Unknown  int16
-}
-
 type compression1Reader struct {
 	r   io.Reader
 	buf []byte
