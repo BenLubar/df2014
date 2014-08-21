@@ -11,42 +11,45 @@ type WorldDat struct {
 	Unk004         [3]int32
 	TranslatedName string
 
-	GeneratedRaws struct {
-		Inorganic        [][]string
-		Item             [][]string
-		Creature         [][]string
-		Interaction      [][]string
-		EntityLayer      [][]string
-		InteractionLayer [][]string
-		LanguageLayer    [][]string
-	}
-
-	StringTables struct {
-		Inorganic         []string
-		Plant             []string
-		Body              []string
-		BodyGloss         []string
-		Creature          []string
-		Item              []string
-		Building          []string
-		Entity            []string
-		Word              []string
-		Symbol            []string
-		Translation       []string
-		Color             []string
-		Shape             []string
-		Pattern           []string
-		Reaction          []string
-		MaterialTemplate  []string
-		TissueTemplate    []string
-		BodyDetailPlan    []string
-		CreatureVariation []string
-		Interaction       []string
-	}
+	GeneratedRaws WorldGeneratedRaws
+	StringTables  WorldStringTables
 
 	Unk005 [][14]uint32
 	Unk006 map[uint32]uint32
 	Unk007 [19]map[uint32]bool
 
 	Books []Book
+}
+
+type WorldGeneratedRaws struct {
+	Inorganic        [][]string
+	Item             [][]string
+	Creature         [][]string
+	Interaction      [][]string
+	EntityLayer      [][]string
+	InteractionLayer [][]string
+	LanguageLayer    [][]string
+}
+
+type WorldStringTables struct {
+	Inorganic         []string
+	Plant             []string
+	Body              []string
+	BodyGloss         []string
+	Creature          []string
+	Item              []string
+	Building          []string
+	Entity            []string
+	Word              []string
+	Symbol            []string
+	Translation       []string
+	Color             []string
+	Shape             []string
+	Pattern           []string
+	Reaction          []string
+	MaterialTemplate  []string
+	TissueTemplate    []string
+	BodyDetailPlan    []string
+	CreatureVariation []string
+	Interaction       []string
 }
