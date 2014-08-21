@@ -24,7 +24,9 @@ func testWorldDat(t *testing.T, fn string) {
 
 	r := &Reader{f}
 
-	w, err := r.WorldDat()
+	var w WorldDat
+
+	err = r.Decode(&w)
 	if err != nil {
 		t.Fatal(err)
 	}
