@@ -16,6 +16,18 @@ func TestRegion2WorldDat(t *testing.T) {
 	testWorldDat(t, "work/df_linux/data/save/region2/world.dat")
 }
 
+func TestRegion3WorldDat(t *testing.T) {
+	testWorldDat(t, "work/df_linux/data/save/region3/world.dat")
+}
+
+func TestRegion4WorldDat(t *testing.T) {
+	testWorldDat(t, "work/df_linux/data/save/region4/world.dat")
+}
+
+func TestRegion5WorldDat(t *testing.T) {
+	testWorldDat(t, "work/df_linux/data/save/region5/world.dat")
+}
+
 func testWorldDat(t *testing.T, fn string) {
 	f, err := os.Open(fn)
 	if err != nil {
@@ -32,6 +44,8 @@ func testWorldDat(t *testing.T, fn string) {
 		t.Error(err)
 	}
 	t.Logf("%# v", pretty.Formatter(w))
+
+	t.Logf("%d books", len(w.Books))
 
 	xxd := exec.Command("xxd")
 	xxd.Stdin = io.LimitReader(r, 1<<10)

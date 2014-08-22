@@ -22,13 +22,13 @@ type WorldDat struct {
 }
 
 type WorldGeneratedRaws struct {
-	Inorganic        [][]string
-	Item             [][]string
-	Creature         [][]string
-	Interaction      [][]string
-	EntityLayer      [][]string
-	InteractionLayer [][]string
-	LanguageLayer    [][]string
+	Inorganic   [][]string
+	Unk000      [][]string
+	Item        [][]string
+	Creature    [][]string
+	Entity      [][]string
+	Interaction [][]string
+	Language    [][]string
 }
 
 type WorldStringTables struct {

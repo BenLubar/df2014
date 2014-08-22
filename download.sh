@@ -28,4 +28,7 @@ sed -e 's/\[END_YEAR:1050\]/[END_YEAR:250]/'    -i 'data/init/world_gen.txt'
 
 # generate some worlds!
 ./libs/Dwarf_Fortress -gen 1 12345 "LARGE REGION"  || true
-./libs/Dwarf_Fortress -gen 2 54321 "POCKET ISLAND" || true
+./libs/Dwarf_Fortress -gen 2 23456 "POCKET ISLAND" || true
+./libs/Dwarf_Fortress -gen 3 34567 "SMALL REGION" || true
+./libs/Dwarf_Fortress -gen 4 45678 "SMALLER ISLAND" || true
+./libs/Dwarf_Fortress -gen 5 56789 "MEDIUM REGION" || true
