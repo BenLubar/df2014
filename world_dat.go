@@ -4,19 +4,66 @@ type WorldDat struct {
 	Header
 
 	Unk000         uint16
-	Unk001         [28]int32
+	Unk001         int32
+	Unk002         int32
+	Unk003         int32
+	Unk004         int32
+	Unk005         int32
+	Unk006         int32
+	Unk007         int32
+	Unk008         int32
+	Unk009         int32
+	Unk010         int32
+	Unk011         int32
+	Unk012         int32
+	Unk013         int32
+	Unk014         int32
+	Unk015         int32
+	Unk016         int32
+	Unk017         int32
+	Unk018         int32
+	Unk019         int32
+	Unk020         int32
+	Unk021         int32
+	Unk022         int32
+	Unk023         int32
+	Unk024         int32
+	Unk025         int32
+	Unk026         int32
+	Unk027         int32
+	Unk028         int32
 	Name           *Name
-	Unk002         uint8
-	Unk003         int16
-	Unk004         [3]int32
+	Unk029         uint8
+	Unk030         int16
+	Unk031         int32
+	Unk032         int32
+	Unk033         int32
 	TranslatedName string
 
 	GeneratedRaws WorldGeneratedRaws
 	StringTables  WorldStringTables
 
-	Unk005 [][14]uint32
-	Unk006 map[uint32]uint32
-	Unk007 [19]map[uint32]bool
+	Unk034 []WorldDatUnk034
+	Unk035 map[uint32]uint32
+	Unk036 map[uint32]bool
+	Unk037 map[uint32]bool
+	Unk038 map[uint32]bool
+	Unk039 map[uint32]bool
+	Unk040 map[uint32]bool
+	Unk041 map[uint32]bool
+	Unk042 map[uint32]bool
+	Unk043 map[uint32]bool
+	Unk044 map[uint32]bool
+	Unk045 map[uint32]bool
+	Unk046 map[uint32]bool
+	Unk047 map[uint32]bool
+	Unk048 map[uint32]bool
+	Unk049 map[uint32]bool
+	Unk050 map[uint32]bool
+	Unk051 map[uint32]bool
+	Unk052 map[uint32]bool
+	Unk053 map[uint32]bool
+	Unk054 map[uint32]bool
 
 	Books []Book
 }
@@ -52,4 +99,21 @@ type WorldStringTables struct {
 	BodyDetailPlan    []string
 	CreatureVariation []string
 	Interaction       []string
+}
+
+type WorldDatUnk034 struct {
+	Unk000 uint32
+	Unk001 uint32
+	Unk002 uint32
+	Unk003 uint32
+	Unk004 uint32
+	Unk005 uint32
+	Unk006 uint32
+	Unk007 uint32
+	Unk008 uint32
+	Unk009 uint32
+	Unk010 uint32
+	Unk011 uint32
+	Unk012 uint32
+	Unk013 uint32
 }
