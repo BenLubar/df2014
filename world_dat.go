@@ -48,7 +48,7 @@ type WorldDat struct {
 	Unk036 map[uint32]bool
 	Unk037 map[uint32]bool
 	Unk038 map[uint32]bool
-	Unk039 map[uint32]bool
+	Unk039 map[uint32]bool `df2014_assert_same_length_as:"Unk035"`
 	Unk040 map[uint32]bool
 	Unk041 map[uint32]bool
 	Unk042 map[uint32]bool
@@ -65,7 +65,8 @@ type WorldDat struct {
 	Unk053 map[uint32]bool
 	Unk054 map[uint32]bool
 
-	Books []Book
+	Books    []Book `df2014_assert_same_length_as:"Unk035"`
+	Entities Entity
 }
 
 type WorldGeneratedRaws struct {

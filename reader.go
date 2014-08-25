@@ -35,6 +35,18 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 			if err != nil {
 				return err
 			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_same_length_as"); tag != "" {
+				expected, actual := v.FieldByName(tag).Len(), v.Field(i).Len()
+				if expected != actual {
+					return fmt.Errorf("df2014: len(%s) %d != len(%s) %d", tag, expected, v.Type().Field(i).Name, actual)
+				}
+			}
+			if expected := v.Type().Field(i).Tag.Get("df2014_assert_equals"); expected != "" {
+				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
+				if expected != actual {
+					return fmt.Errorf("df2014: %s: %q != %q", v.Type().Field(i).Name, expected, actual)
+				}
+			}
 		}
 		return nil
 
