@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-archive=df_40_09_linux.tar.bz2
+archive=df_40_10_linux.tar.bz2
 
 # make core dumps if something crashes.
 ulimit -c unlimited
