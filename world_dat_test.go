@@ -43,7 +43,7 @@ func testWorldDat(t *testing.T, fn string) {
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log(string(prettyPrint(reflect.ValueOf(w), nil, []byte{'\n'})))
+	t.Log(string(prettyPrint(&w, reflect.ValueOf(w), nil, []byte{'\n'})))
 
 	xxd := exec.Command("xxd")
 	xxd.Stdin = io.LimitReader(r, 1<<10)
