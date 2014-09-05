@@ -46,14 +46,12 @@ type Entity struct {
 	Creature EntityCreatureIndex
 	Unk004   uint32 `df2014_assert_equals:"0x0"`
 
-	Unk006 []uint16
-	Unk007 []uint32 `df2014_assert_same_length_as:"Unk006"`
-	Unk008 uint32   `df2014_assert_equals:"0x0"`
-	Unk009 uint32   `df2014_assert_equals:"0x0"`
-	Unk010 uint32   `df2014_assert_equals:"0x0"`
-	Unk011 uint32   `df2014_assert_equals:"0x0"`
-	Unk012 uint32   `df2014_assert_equals:"0x0"`
-	Unk013 uint32   `df2014_assert_equals:"0x0"`
+	Unk006 MaterialList
+	Unk008 uint32 `df2014_assert_equals:"0x0"`
+	Unk009 uint32 `df2014_assert_equals:"0x0"`
+	Unk010 MaterialList
+	Unk012 uint32 `df2014_assert_equals:"0x0"`
+	Unk013 uint32 `df2014_assert_equals:"0x0"`
 	Unk014 MaterialList
 	Unk016 MaterialList
 	Unk018 MaterialList
@@ -68,8 +66,8 @@ type Entity struct {
 	Unk036 MaterialList
 	Unk038 MaterialList
 	Unk040 MaterialList
-	Unk042 uint32 `df2014_assert_equals:"0x0"`
-	Unk043 uint32 `df2014_assert_equals:"0x0"`
+	Unk042 []uint32
+	Unk043 []uint16 `df2014_assert_same_length_as:"Unk042"`
 	Unk044 []uint32
 	Unk045 []uint16 `df2014_assert_same_length_as:"Unk044"`
 	Unk046 uint32   `df2014_assert_equals:"0x0"`
@@ -178,10 +176,140 @@ type Entity struct {
 	Unk141 []uint32 `df2014_assert_same_length_as:"Unk139"`
 	Unk142 []uint16 `df2014_assert_same_length_as:"Unk139"`
 
-	Unk143 []EntityUnk143
+	Unk143 uint32 `df2014_assert_equals:"0x1"`
+	Unk144 uint32
+	Unk145 uint16 // flags?
+
+	Unk146 uint32 `df2014_assert_equals:"0x1"`
+	Unk147 uint8
+
+	Unk148 uint32 `df2014_assert_equals:"0x1"`
+	Unk149 bool
+
+	Unk150 uint32 `df2014_assert_equals:"0x1"`
+	Unk151 uint16
+
+	Unk152 uint32 `df2014_assert_equals:"0x1"`
+	Unk153 uint32
+
+	Unk154 uint32 `df2014_assert_equals:"0x0"`
+	Unk155 uint32 `df2014_assert_equals:"0x0"`
+	Unk156 uint32 `df2014_assert_equals:"0x0"`
+	Unk157 uint32 `df2014_assert_equals:"0x0"`
+	Unk158 uint32 `df2014_assert_equals:"0x0"`
+	Unk159 uint32 `df2014_assert_equals:"0x0"`
+	Unk160 uint32 `df2014_assert_equals:"0x0"`
+	Unk161 uint32 `df2014_assert_equals:"0x0"`
+	Unk162 uint32 `df2014_assert_equals:"0x0"`
+
+	Unk163 uint16 `df2014_assert_equals:"0xd"`
+	Unk164 uint16 `df2014_assert_equals:"0x10"`
+	Unk165 uint16 `df2014_assert_equals:"0x10"`
+	Unk166 uint16 `df2014_assert_equals:"0x1"`
+	Unk167 uint16 `df2014_assert_equals:"0x1"`
+	Unk168 uint16 `df2014_assert_equals:"0xf"`
+	Unk169 uint16 `df2014_assert_equals:"0x0"`
+	Unk170 uint16 `df2014_assert_equals:"0x1"`
+	Unk171 uint16 `df2014_assert_equals:"0xf"`
+	Unk172 uint16 `df2014_assert_equals:"0xf"`
+	Unk173 uint16 `df2014_assert_equals:"0x0"`
+	Unk174 uint16 `df2014_assert_equals:"0x0"`
+	Unk175 uint16 `df2014_assert_equals:"0x0"`
+	Unk176 uint16 `df2014_assert_equals:"0x0"`
+	Unk177 uint16 `df2014_assert_equals:"0x0"`
+	Unk178 uint16 `df2014_assert_equals:"0x2"`
+	Unk179 uint16 `df2014_assert_equals:"0xf"`
+	Unk180 uint16 `df2014_assert_equals:"0xf"`
+	Unk181 uint16 `df2014_assert_equals:"0xf"`
+	Unk182 uint16 `df2014_assert_equals:"0xf"`
+	Unk183 uint16 `df2014_assert_equals:"0xf"`
+	Unk184 uint16 `df2014_assert_equals:"0xf"`
+
+	Unk185 uint32 `df2014_assert_equals:"0x0"`
+	Unk186 uint32 `df2014_assert_equals:"0x0"`
+	Unk187 uint32 `df2014_assert_equals:"0x0"`
+	Unk188 uint32 `df2014_assert_equals:"0x0"`
+	Unk189 uint32 `df2014_assert_equals:"0x0"`
+	Unk190 uint32 `df2014_assert_equals:"0x0"`
+	Unk191 uint32 `df2014_assert_equals:"0x0"`
+	Unk192 uint32 `df2014_assert_equals:"0x0"`
+	Unk193 uint32 `df2014_assert_equals:"0x0"`
+	Unk194 uint32 `df2014_assert_equals:"0x0"`
+	Unk195 uint32 `df2014_assert_equals:"0x0"`
+	Unk196 uint32 `df2014_assert_equals:"0x0"`
+	Unk197 uint32 `df2014_assert_equals:"0x0"`
+	Unk198 uint32 `df2014_assert_equals:"0x0"`
+	Unk199 uint32 `df2014_assert_equals:"0x0"`
+	Unk200 uint32 `df2014_assert_equals:"0x0"`
+	Unk201 uint32 `df2014_assert_equals:"0x0"`
+	Unk202 uint32 `df2014_assert_equals:"0x0"`
+	Unk203 uint32 `df2014_assert_equals:"0x0"`
+	Unk204 uint32 `df2014_assert_equals:"0x0"`
+	Unk205 uint32 `df2014_assert_equals:"0x0"`
+	Unk206 uint32 `df2014_assert_equals:"0x0"`
+	Unk207 uint32 `df2014_assert_equals:"0x0"`
+	Unk208 uint32 `df2014_assert_equals:"0x0"`
+	Unk209 uint32 `df2014_assert_equals:"0x0"`
+	Unk210 uint32 `df2014_assert_equals:"0x0"`
+	Unk211 uint32 `df2014_assert_equals:"0x0"`
+	Unk212 uint32 `df2014_assert_equals:"0x0"`
+	Unk213 uint32 `df2014_assert_equals:"0x0"`
+	Unk214 uint32 `df2014_assert_equals:"0x0"`
+	Unk215 uint32 `df2014_assert_equals:"0x0"`
+	Unk216 uint32 `df2014_assert_equals:"0x0"`
+	Unk217 uint32 `df2014_assert_equals:"0x0"`
+	Unk218 uint32 `df2014_assert_equals:"0x0"`
+	Unk219 uint32 `df2014_assert_equals:"0x0"`
+	Unk220 uint32 `df2014_assert_equals:"0x0"`
+	Unk221 uint32 `df2014_assert_equals:"0x0"`
+	Unk222 uint32 `df2014_assert_equals:"0x0"`
+	Unk223 uint32 `df2014_assert_equals:"0x0"`
+	Unk224 uint32 `df2014_assert_equals:"0x0"`
+	Unk225 uint32 `df2014_assert_equals:"0x0"`
+	Unk226 uint32 `df2014_assert_equals:"0x0"`
+	Unk227 uint32 `df2014_assert_equals:"0x0"`
+	Unk228 uint32 `df2014_assert_equals:"0x0"`
+	Unk229 uint32 `df2014_assert_equals:"0x0"`
+	Unk230 uint32 `df2014_assert_equals:"0x0"`
+	Unk231 int32  `df2014_assert_equals:"-1"`
+	Unk232 uint32 `df2014_assert_equals:"0x0"`
+	Unk233 int32  `df2014_assert_equals:"-1"`
+	Unk234 uint32 `df2014_assert_equals:"0x0"`
+	Unk235 uint32 `df2014_assert_equals:"0x0"`
+	Unk236 uint32 `df2014_assert_equals:"0x0"`
+	Unk237 uint32 `df2014_assert_equals:"0x0"`
+	Unk238 uint32 `df2014_assert_equals:"0x0"`
+	Unk239 uint32 `df2014_assert_equals:"0x0"`
+	Unk240 uint32 `df2014_assert_equals:"0x0"`
+	Unk241 uint32 `df2014_assert_equals:"0x0"`
+	Unk242 uint32 `df2014_assert_equals:"0x0"`
+	Unk243 uint32 `df2014_assert_equals:"0x0"`
+	Unk244 uint32 `df2014_assert_equals:"0x0"`
+	Unk245 uint32 `df2014_assert_equals:"0x0"`
+	Unk246 uint32 `df2014_assert_equals:"0x0"`
+	Unk247 uint32 `df2014_assert_equals:"0x0"`
+	Unk248 uint32 `df2014_assert_equals:"0x0"`
+	Unk249 uint32 `df2014_assert_equals:"0x0"`
+	Unk250 uint8  `df2014_assert_equals:"0x0"`
+
+	Unk251 []EntityUnk251
+
+	Unk252 uint32 `df2014_assert_equals:"0x0"`
+	Unk253 uint32 `df2014_assert_equals:"0x0"`
+	Unk254 uint32 `df2014_assert_equals:"0x0"`
+	Unk255 uint32 `df2014_assert_equals:"0x0"`
+	Unk256 uint32 `df2014_assert_equals:"0x0"`
+	Unk257 uint32 `df2014_assert_equals:"0x0"`
 }
 
-type EntityUnk143 struct {
+type EntityUnk251 struct {
+	Unk000 uint32 `df2014_assert_equals:"0x4"`
 	Unk001 uint32
-	Unk002 uint16 // flags?
+	Unk002 uint32
+	Unk003 int32 `df2014_assert_equals:"-1"`
+	Unk004 uint32
+	Unk005 int32  `df2014_assert_equals:"-1"`
+	Unk006 uint32 `df2014_assert_same_as:"Unk004"`
+	Unk007 int32  `df2014_assert_equals:"-1"`
+	Unk008 uint32 `df2014_assert_equals:"0x0"`
 }

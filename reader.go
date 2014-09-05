@@ -18,8 +18,6 @@ func (r *Reader) Decode(v interface{}) error {
 	return r.DecodeValue(reflect.ValueOf(v).Elem())
 }
 
-var bookListType = reflect.TypeOf([]Book(nil))
-
 func (r *Reader) DecodeValue(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Struct:
@@ -31,21 +29,50 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 			v.Set(reflect.ValueOf(h))
 			return nil
 		}
-		for i := 0; i < v.NumField(); i++ {
-			err := r.DecodeValue(v.Field(i))
+		if _, ok := v.Interface().(Book); ok {
+			b, err := r.book()
 			if err != nil {
 				return err
 			}
+			v.Set(reflect.ValueOf(b))
+			return nil
+		}
+		for i := 0; i < v.NumField(); i++ {
+			if tag := v.Type().Field(i).Tag.Get("df2014_get_length_from"); tag != "" {
+				l := v.FieldByName(tag).Len()
+				v.Field(i).Set(reflect.MakeSlice(v.Type().Field(i).Type, l, l))
+
+				for j := 0; j < l; j++ {
+					err := r.DecodeValue(v.Field(i).Index(j))
+					if err != nil {
+						v.Field(i).SetLen(j + 1) // hide the entries that we didn't get to
+						return err
+					}
+				}
+			} else {
+				err := r.DecodeValue(v.Field(i))
+				if err != nil {
+					return err
+				}
+			}
+
 			if tag := v.Type().Field(i).Tag.Get("df2014_assert_same_length_as"); tag != "" {
 				expected, actual := v.FieldByName(tag).Len(), v.Field(i).Len()
 				if expected != actual {
-					return fmt.Errorf("df2014: len(%s) %d != len(%s) %d", tag, expected, v.Type().Field(i).Name, actual)
+					return fmt.Errorf("df2014: len(%s) %d != len(%s) %d", v.Type().Field(i).Name, actual, tag, expected)
+				}
+			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_same_as"); tag != "" {
+				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
+				expected := fmt.Sprintf("%#v", v.FieldByName(tag).Interface())
+				if expected != actual {
+					return fmt.Errorf("df2014: %s %q != %s %q", v.Type().Field(i).Name, actual, tag, expected)
 				}
 			}
 			if expected := v.Type().Field(i).Tag.Get("df2014_assert_equals"); expected != "" {
 				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
 				if expected != actual {
-					return fmt.Errorf("df2014: %s: %q != %q", v.Type().Field(i).Name, expected, actual)
+					return fmt.Errorf("df2014: %s: %q != %q", v.Type().Field(i).Name, actual, expected)
 				}
 			}
 			if tag := v.Type().Field(i).Tag.Get("df2014_assert_gte"); tag != "" {
@@ -96,15 +123,6 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		return nil
 
 	case reflect.Slice:
-		if v.Type() == bookListType {
-			l, err := r.bookList()
-			if err != nil {
-				return err
-			}
-			v.Set(reflect.ValueOf(l))
-			return nil
-		}
-
 		var length uint32
 		err := binary.Read(r, binary.LittleEndian, &length)
 		if err != nil {
