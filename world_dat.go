@@ -3,35 +3,35 @@ package df2014
 type WorldDat struct {
 	Header
 
-	Unk000         uint16
-	Unk001         int32
-	Unk002         int32
-	Unk003         int32
-	Unk004         int32
-	Unk005         int32
-	Unk006         int32
-	Unk007         int32
-	Unk008         int32
-	Unk009         int32
-	Unk010         int32
-	Unk011         int32
-	Unk012         int32
-	Unk013         int32
-	Unk014         int32
-	Unk015         int32
-	Unk016         int32
-	Unk017         int32
-	Unk018         int32
-	Unk019         int32
-	Unk020         int32
-	Unk021         int32
-	Unk022         int32
-	Unk023         int32
-	Unk024         int32
-	Unk025         int32
-	Unk026         int32
-	Unk027         int32
-	Unk028         int32
+	Unk000         uint16 `df2014_assert_equals:"0x0"`
+	Unk001         int32  `df2014_assert_gte:"-1"`
+	Unk002         int32  `df2014_assert_gte:"-1"`
+	Unk003         int32  `df2014_assert_gte:"-1"`
+	Unk004         int32  `df2014_assert_gte:"-1"`
+	Unk005         int32  `df2014_assert_gte:"-1"`
+	Unk006         int32  `df2014_assert_gte:"-1"`
+	Unk007         int32  `df2014_assert_gte:"-1"`
+	Unk008         int32  `df2014_assert_gte:"-1"`
+	Unk009         int32  `df2014_assert_gte:"-1"`
+	Unk010         int32  `df2014_assert_gte:"-1"`
+	Unk011         int32  `df2014_assert_gte:"-1"`
+	Unk012         int32  `df2014_assert_gte:"-1"`
+	Unk013         int32  `df2014_assert_gte:"-1"`
+	Unk014         int32  `df2014_assert_gte:"-1"`
+	Unk015         int32  `df2014_assert_gte:"-1"`
+	Unk016         int32  `df2014_assert_gte:"-1"`
+	Unk017         int32  `df2014_assert_gte:"-1"`
+	Unk018         int32  `df2014_assert_gte:"-1"`
+	Unk019         int32  `df2014_assert_gte:"-1"`
+	Unk020         int32  `df2014_assert_gte:"-1"`
+	Unk021         int32  `df2014_assert_gte:"-1"`
+	Unk022         int32  `df2014_assert_gte:"-1"`
+	Unk023         int32  `df2014_assert_gte:"-1"`
+	Unk024         int32  `df2014_assert_gte:"-1"`
+	Unk025         int32  `df2014_assert_gte:"-1"`
+	Unk026         int32  `df2014_assert_gte:"-1"`
+	Unk027         int32  `df2014_assert_gte:"-1"`
+	Unk028         int32  `df2014_assert_gte:"-1"`
 	Name           *Name
 	Unk029         uint8
 	Unk030         int16

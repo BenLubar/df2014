@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 )
 
 type Reader struct {
@@ -45,6 +46,29 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
 				if expected != actual {
 					return fmt.Errorf("df2014: %s: %q != %q", v.Type().Field(i).Name, expected, actual)
+				}
+			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_gte"); tag != "" {
+				switch v.Field(i).Kind() {
+				case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					actual := v.Field(i).Int()
+					expected, err := strconv.ParseInt(tag, 0, v.Field(i).Type().Bits())
+					if err != nil {
+						return err
+					}
+					if actual < expected {
+						return fmt.Errorf("df2014: %s: %d ≱ %d", v.Type().Field(i).Name, actual, expected)
+					}
+
+				case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					actual := v.Field(i).Uint()
+					expected, err := strconv.ParseUint(tag, 0, v.Field(i).Type().Bits())
+					if err != nil {
+						return err
+					}
+					if actual < expected {
+						return fmt.Errorf("df2014: %s: %d ≱ %d", v.Type().Field(i).Name, actual, expected)
+					}
 				}
 			}
 		}
@@ -241,7 +265,7 @@ func (r *Reader) header() (h Header, err error) {
 		return
 	}
 
-	if h.Version != 1452 {
+	if h.Version != 1456 {
 		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
 		return
 	}
