@@ -177,4 +177,11 @@ type Entity struct {
 	Unk140 []uint16 `df2014_assert_same_length_as:"Unk139"`
 	Unk141 []uint32 `df2014_assert_same_length_as:"Unk139"`
 	Unk142 []uint16 `df2014_assert_same_length_as:"Unk139"`
+
+	Unk143 []EntityUnk143
+}
+
+type EntityUnk143 struct {
+	Unk001 uint32
+	Unk002 uint16 // flags?
 }

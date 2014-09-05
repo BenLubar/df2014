@@ -33,11 +33,11 @@ type WorldDat struct {
 	Unk027         int32  `df2014_assert_gte:"-1"`
 	Unk028         int32  `df2014_assert_gte:"-1"`
 	Name           *Name
-	Unk029         uint8
-	Unk030         int16
-	Unk031         int32
-	Unk032         int32
-	Unk033         int32
+	Unk029         uint8 `df2014_assert_equals:"0x1"`
+	Unk030         int16 `df2014_assert_equals:"0"`
+	Unk031         int32 `df2014_assert_equals:"1"`
+	Unk032         int32 `df2014_assert_equals:"0"`
+	Unk033         int32 `df2014_assert_equals:"0"`
 	TranslatedName string
 
 	GeneratedRaws WorldGeneratedRaws
