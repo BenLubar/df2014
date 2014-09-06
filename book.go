@@ -7,7 +7,7 @@ import (
 
 type Book struct {
 	Unk000 uint32
-	Unk001 uint32
+	ID     uint32
 	Unk002 uint16
 	Unk003 int32
 	Unk004 uint16
@@ -88,7 +88,7 @@ func (r *Reader) book() (book Book, err error) {
 		}
 	}
 
-	err = binary.Read(r, binary.LittleEndian, &book.Unk001)
+	err = binary.Read(r, binary.LittleEndian, &book.ID)
 	if err != nil {
 		return
 	}
@@ -111,7 +111,7 @@ func (r *Reader) book() (book Book, err error) {
 		if err != nil {
 			return
 		}
-		if expected := book.Unk001; n != expected {
+		if expected := book.ID; n != expected {
 			err = fmt.Errorf("df2014: book expectation failed: %v != %v", n, expected)
 			return
 		}

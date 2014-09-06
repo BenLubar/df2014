@@ -98,6 +98,34 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 					}
 				}
 			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_id_set"); tag != "" {
+				want := make(map[interface{}]bool, v.FieldByName(tag).Len())
+				for _, id := range v.FieldByName(tag).MapKeys() {
+					want[id.Interface()] = true
+				}
+
+				have := make(map[interface{}]bool, v.Field(i).Len())
+				for j, l := 0, v.Field(i).Len(); j < l; j++ {
+					have[v.Field(i).Index(j).FieldByName("ID").Interface()] = true
+				}
+
+				missing := make(map[interface{}]bool)
+				for id := range want {
+					if !have[id] {
+						missing[id] = true
+					}
+				}
+				unexpected := make(map[interface{}]bool)
+				for id := range have {
+					if !want[id] {
+						unexpected[id] = true
+					}
+				}
+
+				if len(missing) > 0 || len(unexpected) > 0 {
+					fmt.Errorf("df2014: %s: ids missing=%v unexpected=%v", v.Type().Field(i).Name, missing, unexpected)
+				}
+			}
 		}
 		return nil
 
@@ -167,18 +195,18 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 				switch prev.Kind() {
 				case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					if prev.Int() > next.Int() {
-						return fmt.Errorf("df2014: values not in order: %v > %v", prev, next)
+						return fmt.Errorf("df2014: values not in order: %v > %v", prev.Interface(), next.Interface())
 					}
 					if prev.Int() == next.Int() {
-						return fmt.Errorf("df2014: duplicate value: %v", prev)
+						return fmt.Errorf("df2014: duplicate value: %v", prev.Interface())
 					}
 
 				case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					if prev.Uint() > next.Uint() {
-						return fmt.Errorf("df2014: values not in order: %v > %v", prev, next)
+						return fmt.Errorf("df2014: values not in order: %v > %v", prev.Interface(), next.Interface())
 					}
 					if prev.Uint() == next.Uint() {
-						return fmt.Errorf("df2014: duplicate value: %v", prev)
+						return fmt.Errorf("df2014: duplicate value: %v", prev.Interface())
 					}
 				}
 			}

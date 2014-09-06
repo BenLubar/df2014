@@ -17,6 +17,32 @@ const (
 	Outcast
 )
 
+var entityTypes = [...]string{
+	"civilization",
+	"site government",
+	"vessel crew",
+	"migrating group",
+	"nomadic group",
+	"religion",
+	"military unit",
+	"outcast",
+}
+
+func (i EntityType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	buf = strconv.AppendUint(buf, uint64(i), 10)
+	buf = append(buf, " (0x"...)
+	buf = strconv.AppendUint(buf, uint64(i), 16)
+	buf = append(buf, ')')
+
+	if int(i) < len(entityTypes) {
+		buf = append(buf, " ("...)
+		buf = append(buf, entityTypes[i]...)
+		buf = append(buf, ')')
+	}
+
+	return buf
+}
+
 type EntityCreatureIndex uint16
 
 func (i EntityCreatureIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
@@ -38,58 +64,37 @@ type Entity struct {
 	Type     EntityType `df2014_assert_equals:"0x0"`
 	ID       uint32
 	Class    string
-	Unk000   uint16 `df2014_assert_equals:"0x19"`
-	Unk001   uint16 `df2014_assert_equals:"0x4b"`
+	Unk000   uint16 //`df2014_assert_equals:"0x19"`
+	Unk001   uint16 //`df2014_assert_equals:"0x4b"`
 	Unk002   uint32
-	Unk003   uint16 `df2014_assert_equals:"0x0"`
+	Unk003   uint16 //`df2014_assert_equals:"0x0"`
 	Name     *Name
 	Creature EntityCreatureIndex
-	Unk004   uint32 `df2014_assert_equals:"0x0"`
+	Unk004   uint32 //`df2014_assert_equals:"0x0"`
 
-	Unk006 MaterialList
-	Unk008 uint32 `df2014_assert_equals:"0x0"`
-	Unk009 uint32 `df2014_assert_equals:"0x0"`
-	Unk010 MaterialList
-	Unk012 uint32 `df2014_assert_equals:"0x0"`
-	Unk013 uint32 `df2014_assert_equals:"0x0"`
-	Unk014 MaterialList
-	Unk016 MaterialList
-	Unk018 MaterialList
-	Unk020 MaterialList
-	Unk022 MaterialList
-	Unk024 MaterialList
-	Unk026 MaterialList
-	Unk028 MaterialList
-	Unk030 MaterialList
-	Unk032 MaterialList
-	Unk034 MaterialList
-	Unk036 MaterialList
-	Unk038 MaterialList
-	Unk040 MaterialList
+	Materials EntityMaterials
+
 	Unk042 []uint32
 	Unk043 []uint16 `df2014_assert_same_length_as:"Unk042"`
 	Unk044 []uint32
 	Unk045 []uint16 `df2014_assert_same_length_as:"Unk044"`
-	Unk046 uint32   `df2014_assert_equals:"0x0"`
-	Unk047 uint32   `df2014_assert_equals:"0x0"`
-	Unk048 uint32   `df2014_assert_equals:"0x0"`
-	Unk049 uint32   `df2014_assert_equals:"0x0"`
-	Unk050 uint32   `df2014_assert_equals:"0x0"`
-	Unk051 uint32   `df2014_assert_equals:"0x0"`
-	Unk052 uint32   `df2014_assert_equals:"0x0"`
-	Unk053 uint32   `df2014_assert_equals:"0x0"`
-	Unk054 uint32   `df2014_assert_equals:"0x0"`
-	Unk055 uint32   `df2014_assert_equals:"0x0"`
-	Unk056 uint32   `df2014_assert_equals:"0x0"`
-	Unk057 uint32   `df2014_assert_equals:"0x0"`
+	Unk046 MaterialList
+	Unk048 uint32 `df2014_assert_equals:"0x0"`
+	Unk049 uint32 `df2014_assert_equals:"0x0"`
+	Unk050 []uint32
+	Unk051 []uint16 `df2014_assert_same_length_as:"Unk050"`
+	Unk052 MaterialList
+	Unk054 []uint16
+	Unk055 []int16 `df2014_assert_same_length_as:"Unk054"`
+	Unk056 MaterialList
 	Unk058 []uint32
 	Unk059 []uint16 `df2014_assert_same_length_as:"Unk058"`
 	Unk060 []uint32
 	Unk061 []uint16 `df2014_assert_same_length_as:"Unk060"`
-	Unk062 uint32   `df2014_assert_equals:"0x0"`
-	Unk063 uint32   `df2014_assert_equals:"0x0"`
-	Unk064 uint32   `df2014_assert_equals:"0x0"`
-	Unk065 uint32   `df2014_assert_equals:"0x0"`
+	Unk062 []uint32
+	Unk063 []uint16 `df2014_assert_same_length_as:"Unk062"`
+	Unk064 []uint32
+	Unk065 []uint16 `df2014_assert_same_length_as:"Unk064"`
 	Unk066 []uint32
 	Unk067 []uint16 `df2014_assert_same_length_as:"Unk066"`
 	Unk068 []uint32
@@ -100,28 +105,21 @@ type Entity struct {
 	Unk072 []uint16
 	Unk073 []uint32 `df2014_assert_same_length_as:"Unk072"`
 
-	Unk074 uint32 `df2014_assert_equals:"0x0"`
-	Unk075 uint32 `df2014_assert_equals:"0x0"`
-	Unk076 uint32 `df2014_assert_equals:"0x0"`
+	Unk074 []uint32
+	Unk075 []uint32
+	Unk076 []uint32
 
-	Unk077 []uint16
-	Unk078 []uint32 `df2014_assert_same_length_as:"Unk077"`
-	Unk079 uint32   `df2014_assert_equals:"0x0"`
-	Unk080 uint32   `df2014_assert_equals:"0x0"`
-	Unk081 uint32   `df2014_assert_equals:"0x0"`
-	Unk082 uint32   `df2014_assert_equals:"0x0"`
-	Unk083 []uint16
-	Unk084 []uint32 `df2014_assert_same_length_as:"Unk083"`
-	Unk085 []uint16
-	Unk086 []uint32 `df2014_assert_same_length_as:"Unk085"`
-	Unk087 uint32   `df2014_assert_equals:"0x0"`
-	Unk088 uint32   `df2014_assert_equals:"0x0"`
-	Unk089 []uint16
-	Unk090 []uint32 `df2014_assert_same_length_as:"Unk089"`
-	Unk091 []uint16
-	Unk092 []uint32 `df2014_assert_same_length_as:"Unk091"`
-	Unk093 []uint16
-	Unk094 []uint32 `df2014_assert_same_length_as:"Unk093"`
+	Unk077 MaterialList
+	Unk079 MaterialList
+	Unk081 uint32 `df2014_assert_equals:"0x0"`
+	Unk082 uint32 `df2014_assert_equals:"0x0"`
+	Unk083 MaterialList
+	Unk085 MaterialList
+	Unk087 uint32 `df2014_assert_equals:"0x0"`
+	Unk088 uint32 `df2014_assert_equals:"0x0"`
+	Unk089 MaterialList
+	Unk091 MaterialList
+	Unk093 MaterialList
 
 	Unk095 int16 `df2014_assert_equals:"-1"`
 	Unk096 uint32
@@ -167,14 +165,19 @@ type Entity struct {
 
 	Unk134 uint32 `df2014_assert_equals:"0x0"`
 	Unk135 uint32 `df2014_assert_equals:"0x0"`
-	Unk136 uint32 `df2014_assert_equals:"0x0"`
-	Unk137 uint32 `df2014_assert_equals:"0x0"`
-	Unk138 uint32 `df2014_assert_equals:"0x0"`
+	Unk136 []EntityUnk136
+	Unk137 []EntityUnk137
+	Unk138 []uint32
 
-	Unk139 []uint64
-	Unk140 []uint16 `df2014_assert_same_length_as:"Unk139"`
-	Unk141 []uint32 `df2014_assert_same_length_as:"Unk139"`
-	Unk142 []uint16 `df2014_assert_same_length_as:"Unk139"`
+	Unk139   uint32 `df2014_assert_equals:"0x1"`
+	Unk139_1 uint32
+	Unk139_2 uint32 `df2014_assert_equals:"0x0"`
+	Unk140   uint32 `df2014_assert_equals:"0x1"`
+	Unk140_1 uint16
+	Unk141   uint32 `df2014_assert_equals:"0x1"`
+	Unk141_1 uint32
+	Unk142   uint32 `df2014_assert_equals:"0x1"`
+	Unk142_1 uint16
 
 	Unk143 uint32 `df2014_assert_equals:"0x1"`
 	Unk144 uint32
@@ -300,6 +303,50 @@ type Entity struct {
 	Unk255 uint32 `df2014_assert_equals:"0x0"`
 	Unk256 uint32 `df2014_assert_equals:"0x0"`
 	Unk257 uint32 `df2014_assert_equals:"0x0"`
+}
+
+type EntityMaterials struct {
+	Leather  MaterialList
+	Fiber    MaterialList
+	Silk     MaterialList
+	Wool     MaterialList
+	Craft    MaterialList
+	Unk002   MaterialList
+	Barrel   MaterialList
+	Flask    MaterialList
+	Quiver   MaterialList
+	Backpack MaterialList
+	Cage     MaterialList
+	Wood     MaterialList
+	Ore      MaterialList
+	Drink    MaterialList
+	Cheese   MaterialList
+	Powder   MaterialList
+	Extract  MaterialList
+	Meat     MaterialList
+}
+
+type EntityUnk136 struct {
+	Unk000 uint16 `df2014_assert_equals:"0x1"`
+	Unk001 uint32
+	Unk002 uint16 // flags?
+}
+
+type EntityUnk137 struct {
+	Unk000 uint32
+	Unk001 uint32
+	Unk002 uint32
+	Unk003 uint32
+	Unk004 int32 `df2014_assert_equals:"-1"`
+	Unk005 int32 `df2014_assert_equals:"-1"`
+	Unk006 uint32
+	Unk007 uint32
+	Unk008 uint32
+	Unk009 uint32
+	Unk010 uint32
+	Unk011 uint32
+	Unk012 uint32
+	Unk013 uint32
 }
 
 type EntityUnk251 struct {
