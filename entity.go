@@ -46,18 +46,7 @@ func (i EntityType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 type EntityCreatureIndex uint16
 
 func (i EntityCreatureIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendUint(buf, uint64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if int(i) < len(w.StringTables.Creature) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Creature[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
+	return prettyPrintIndex(int64(i), w.StringTables.Creature, buf)
 }
 
 type RaceCasteList struct {
@@ -78,15 +67,7 @@ func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 		buf = append(buf, indent...)
 		buf = strconv.AppendInt(buf, int64(i), 10)
 		buf = append(buf, ": "...)
-		buf = strconv.AppendUint(buf, uint64(r), 10)
-		buf = append(buf, " (0x"...)
-		buf = strconv.AppendUint(buf, uint64(r), 16)
-		buf = append(buf, ')')
-		if r >= 0 && int(r) < len(w.StringTables.Creature) {
-			buf = append(buf, " ("...)
-			buf = append(buf, w.StringTables.Creature[r]...)
-			buf = append(buf, ')')
-		}
+		buf = CreatureIndex(r).prettyPrint(w, buf, indent)
 		buf = append(buf, ": "...)
 		buf = strconv.AppendUint(buf, uint64(c), 10)
 		buf = append(buf, " (0x"...)
@@ -100,12 +81,60 @@ func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 	return buf
 }
 
+type EntityEthicResponse uint16
+
+const (
+	EERNotApplicable EntityEthicResponse = iota
+	EERAcceptable
+	EERPersonalMatter
+	EERJustifiedIfNoRepercussions
+	EERJustifiedIfGoodReason
+	EERJustifiedIfExtremeReason
+	EERJustifiedIfSelfDefense
+	EEROnlyIfSanctioned
+	EERMisguided
+	EERShun
+	EERAppalling
+	EERPunishReprimand
+	EERPunishSerious
+	EERPunishExile
+	EERPunishCapital
+	EERUnthinkable
+	EERRequired
+)
+
+var entityEthicResponses = [...]string{
+	"not applicable",
+	"acceptable",
+	"personal matter",
+	"justified if no repercussions",
+	"justified if good reason",
+	"justified if extreme reason",
+	"justified if self defense",
+	"only if sanctioned",
+	"misguided",
+	"shun",
+	"appalling",
+	"punish reprimand",
+	"punish serious",
+	"punish exile",
+	"punish capital",
+	"unthinkable",
+	"required",
+}
+
+func (i EntityEthicResponse) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	return prettyPrintIndex(int64(i), entityEthicResponses[:], buf)
+}
+
 type Entity struct {
-	Type         EntityType
-	ID           uint32
-	Class        string
-	Unk000       uint16 //`df2014_assert_equals:"0x19"`
-	Unk001       uint16 //`df2014_assert_equals:"0x4b"`
+	Type  EntityType
+	ID    uint32
+	Class string
+
+	Unk000 uint16 // dfhack:resources.unk15a 25 on subterranean_animal_peoples civs
+	Unk001 uint16 // dfhack:resources.unk15b 75 on [...], always ≥ Unk000
+
 	SaveFileID   uint32
 	NextMemberID uint16
 	Name         *Name
@@ -113,40 +142,7 @@ type Entity struct {
 	Flags        uint32
 
 	Materials EntityMaterials
-
-	Fish         RaceCasteList
-	Egg          RaceCasteList
-	Plant        MaterialList
-	Unk048       uint32 `df2014_assert_equals:"0x0"`
-	Unk049       uint32 `df2014_assert_equals:"0x0"`
-	Unk050       []uint32
-	Unk051       []uint16 `df2014_assert_same_length_as:"Unk050"`
-	Seed         MaterialList
-	WoodProducts ItemMaterialList
-	Pet          RaceCasteList
-	Wagon        RaceCasteList
-	PackAnimal   RaceCasteList
-	WagonPuller  RaceCasteList
-	Mount        RaceCasteList
-	Minion       RaceCasteList
-	ExoticPet    RaceCasteList
-	Wood         MaterialList
-
-	Unk074 []uint32
-	Unk075 []uint32
-	Unk076 []uint32
-
-	Unk077 MaterialList
-	Unk079 MaterialList
-	Unk081 uint32 `df2014_assert_equals:"0x0"`
-	Unk082 uint32 `df2014_assert_equals:"0x0"`
-	Unk083 MaterialList
-	Unk085 MaterialList
-	Unk087 uint32 `df2014_assert_equals:"0x0"`
-	Unk088 uint32 `df2014_assert_equals:"0x0"`
-	Unk089 MaterialList
-	Unk091 MaterialList
-	Unk093 MaterialList
+	Resources EntityResources
 
 	Unk095 int16 `df2014_assert_equals:"-1"`
 	Unk096 uint32
@@ -190,15 +186,15 @@ type Entity struct {
 	Unk132 []uint16
 	Unk133 []uint32 `df2014_assert_same_length_as:"Unk132"`
 
-	Unk134 uint32 `df2014_assert_equals:"0x0"`
-	Unk135 uint32 `df2014_assert_equals:"0x0"`
-	Unk136 []EntityUnk136
-	Unk137 []EntityUnk137
-	Unk138 []uint32
+	Unk134      uint32 `df2014_assert_equals:"0x0"`
+	Unk135      uint32 `df2014_assert_equals:"0x0"`
+	EntityLinks []EntityEntityLink
+	SiteLinks   []EntitySiteLink
+	FigureIDs   []uint32
 
 	Unk139   uint32 `df2014_assert_equals:"0x1"`
 	Unk139_1 uint32
-	Unk139_2 uint32 `df2014_assert_equals:"0x0"`
+	Unk139_2 []uint32
 	Unk140   uint32 `df2014_assert_equals:"0x1"`
 	Unk140_1 uint16
 	Unk141   uint32 `df2014_assert_equals:"0x1"`
@@ -222,38 +218,46 @@ type Entity struct {
 	Unk152 uint32 `df2014_assert_equals:"0x1"`
 	Unk153 uint32
 
-	Unk154 uint32 `df2014_assert_equals:"0x0"`
-	Unk155 uint32 `df2014_assert_equals:"0x0"`
-	Unk156 uint32 `df2014_assert_equals:"0x0"`
-	Unk157 uint32 `df2014_assert_equals:"0x0"`
-	Unk158 uint32 `df2014_assert_equals:"0x0"`
-	Unk159 uint32 `df2014_assert_equals:"0x0"`
-	Unk160 uint32 `df2014_assert_equals:"0x0"`
-	Unk161 uint32 `df2014_assert_equals:"0x0"`
-	Unk162 uint32 `df2014_assert_equals:"0x0"`
-
-	Unk163 uint16 `df2014_assert_equals:"0xd"`
-	Unk164 uint16 `df2014_assert_equals:"0x10"`
-	Unk165 uint16 `df2014_assert_equals:"0x10"`
-	Unk166 uint16 `df2014_assert_equals:"0x1"`
-	Unk167 uint16 `df2014_assert_equals:"0x1"`
-	Unk168 uint16 `df2014_assert_equals:"0xf"`
-	Unk169 uint16 `df2014_assert_equals:"0x0"`
-	Unk170 uint16 `df2014_assert_equals:"0x1"`
-	Unk171 uint16 `df2014_assert_equals:"0xf"`
-	Unk172 uint16 `df2014_assert_equals:"0xf"`
-	Unk173 uint16 `df2014_assert_equals:"0x0"`
-	Unk174 uint16 `df2014_assert_equals:"0x0"`
-	Unk175 uint16 `df2014_assert_equals:"0x0"`
-	Unk176 uint16 `df2014_assert_equals:"0x0"`
-	Unk177 uint16 `df2014_assert_equals:"0x0"`
-	Unk178 uint16 `df2014_assert_equals:"0x2"`
-	Unk179 uint16 `df2014_assert_equals:"0xf"`
-	Unk180 uint16 `df2014_assert_equals:"0xf"`
-	Unk181 uint16 `df2014_assert_equals:"0xf"`
-	Unk182 uint16 `df2014_assert_equals:"0xf"`
-	Unk183 uint16 `df2014_assert_equals:"0xf"`
-	Unk184 uint16 `df2014_assert_equals:"0xf"`
+	Unk154_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk154_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk155_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk155_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk156_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk156_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk157_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk157_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk158_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk158_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk159_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk159_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk160_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk160_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk161_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk161_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk162_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk162_2 uint16 `df2014_assert_equals:"0x0"`
+	Unk163   uint16 `df2014_assert_equals:"0xd"`
+	Unk164   uint16 `df2014_assert_equals:"0x10"`
+	Unk165   uint16 `df2014_assert_equals:"0x10"`
+	Unk166   uint16 `df2014_assert_equals:"0x1"`
+	Unk167   uint16 `df2014_assert_equals:"0x1"`
+	Unk168   uint16 `df2014_assert_equals:"0xf"`
+	Unk169   uint16 `df2014_assert_equals:"0x0"`
+	Unk170   uint16 `df2014_assert_equals:"0x1"`
+	Unk171   uint16 `df2014_assert_equals:"0xf"`
+	Unk172   uint16 `df2014_assert_equals:"0xf"`
+	Unk173   uint16 `df2014_assert_equals:"0x0"`
+	Unk174   uint16 `df2014_assert_equals:"0x0"`
+	Unk175   uint16 `df2014_assert_equals:"0x0"`
+	Unk176   uint16 `df2014_assert_equals:"0x0"`
+	Unk177   uint16 `df2014_assert_equals:"0x0"`
+	Unk178   uint16 `df2014_assert_equals:"0x2"`
+	Unk179   uint16 `df2014_assert_equals:"0xf"`
+	Unk180   uint16 `df2014_assert_equals:"0xf"`
+	Unk181   uint16 `df2014_assert_equals:"0xf"`
+	Unk182   uint16 `df2014_assert_equals:"0xf"`
+	Unk183   uint16 `df2014_assert_equals:"0xf"`
+	Unk184   uint16 `df2014_assert_equals:"0xf"`
 
 	Unk185 uint32 `df2014_assert_equals:"0x0"`
 	Unk186 uint32 `df2014_assert_equals:"0x0"`
@@ -353,13 +357,72 @@ type EntityMaterials struct {
 	Meat     MaterialList
 }
 
-type EntityUnk136 struct {
-	Unk000 uint16 `df2014_assert_equals:"0x1"`
-	Unk001 uint32
-	Unk002 uint16 // flags?
+type EntityResources struct {
+	Fish         RaceCasteList
+	Egg          RaceCasteList
+	Plant        MaterialList
+	Unk000       uint32 `df2014_assert_equals:"0x0"`
+	Unk001       uint32 `df2014_assert_equals:"0x0"`
+	Unk002       []uint32
+	Unk003       []uint16 `df2014_assert_same_length_as:"Unk002"`
+	Seed         MaterialList
+	WoodProducts ItemMaterialList
+	Pet          RaceCasteList
+	Wagon        RaceCasteList
+	PackAnimal   RaceCasteList
+	WagonPuller  RaceCasteList
+	Mount        RaceCasteList
+	Minion       RaceCasteList
+	ExoticPet    RaceCasteList
+	Wood         MaterialList
+	Metal        []InorganicIndex
+	Stone        []InorganicIndex
+	Gem          []InorganicIndex
+	Bone         MaterialList
+	Shell        MaterialList
+	Pearl        MaterialList
+	Ivory        MaterialList
+	Horn         MaterialList
+	Unk004       MaterialList
+	Sand         MaterialList
+	Glass        MaterialList
+	Clay         MaterialList
 }
 
-type EntityUnk137 struct {
+type EntityEntityLinkType uint16
+
+const (
+	EntityParent EntityEntityLinkType = iota
+	EntityChild
+)
+
+var entityEntityLinkTypes = [...]string{
+	"parent",
+	"child",
+}
+
+func (i EntityEntityLinkType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	buf = strconv.AppendUint(buf, uint64(i), 10)
+	buf = append(buf, " (0x"...)
+	buf = strconv.AppendUint(buf, uint64(i), 16)
+	buf = append(buf, ')')
+
+	if int(i) < len(entityEntityLinkTypes) {
+		buf = append(buf, " ("...)
+		buf = append(buf, entityEntityLinkTypes[i]...)
+		buf = append(buf, ')')
+	}
+
+	return buf
+}
+
+type EntityEntityLink struct {
+	Type     EntityEntityLinkType
+	ID       uint32
+	Strength uint16
+}
+
+type EntitySiteLink struct {
 	Unk000 uint32
 	Unk001 uint32
 	Unk002 uint32
@@ -371,9 +434,9 @@ type EntityUnk137 struct {
 	Unk008 uint32
 	Unk009 uint32
 	Unk010 uint32
-	Unk011 uint32
-	Unk012 uint32
-	Unk013 uint32
+	Unk011 uint32 `df2014_assert_equals:"0x64"`
+	Unk012 uint32 `df2014_assert_equals:"0x0"`
+	Unk013 uint32 `df2014_assert_equals:"0x0"`
 }
 
 type EntityUnk251 struct {

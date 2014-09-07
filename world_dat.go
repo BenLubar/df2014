@@ -5,10 +5,10 @@ type WorldDat struct {
 
 	Unk000         uint16 `df2014_assert_equals:"0x0"`
 	Unk001         int32  `df2014_assert_gte:"-1"`
-	Unk002         int32  `df2014_assert_gte:"-1"`
+	Unk002         int32  `df2014_assert_gte:"-1" df2014_assert_same_as:"Unk001"`
 	Unk003         int32  `df2014_assert_gte:"-1"`
 	Unk004         int32  `df2014_assert_gte:"-1"`
-	Unk005         int32  `df2014_assert_gte:"-1"`
+	Unk005         int32  `df2014_assert_gte:"-1" df2014_assert_same_as:"Unk001"`
 	Unk006         int32  `df2014_assert_gte:"-1"`
 	Unk007         int32  `df2014_assert_gte:"-1"`
 	Unk008         int32  `df2014_assert_gte:"-1"`

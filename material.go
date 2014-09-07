@@ -37,24 +37,21 @@ type MaterialType uint16
 func (mt MaterialType) Convert(index int32) interface{} {
 	switch {
 	case mt == 0:
-		return MaterialInorganic{uint16(mt), index}
+		return MaterialInorganic{uint16(mt), InorganicIndex(index)}
 	case index < 0:
-		return MaterialBuiltin{uint16(mt), index}
+		return MaterialBuiltin{BuiltinIndex(mt), index}
 	case 19 <= mt && mt < 219:
-		return MaterialCreature{uint16(mt - 19), index}
+		return MaterialCreature{uint16(mt - 19), CreatureIndex(index)}
 	case 219 <= mt && mt < 419:
 		return MaterialFigure{uint16(mt - 219), index}
 	case 419 <= mt && mt < 619:
-		return MaterialPlant{uint16(mt - 419), index}
+		return MaterialPlant{uint16(mt - 419), PlantIndex(index)}
 	default:
-		return MaterialBuiltin{uint16(mt), index}
+		return MaterialBuiltin{BuiltinIndex(mt), index}
 	}
 }
 
-type MaterialBuiltin struct {
-	T uint16
-	I int32
-}
+type BuiltinIndex uint16
 
 // keep in sync with builtin_mats in https://github.com/DFHack/df-structures/blob/master/df.materials.xml
 var builtinMaterials = [...]string{
@@ -77,6 +74,15 @@ var builtinMaterials = [...]string{
 	"FILTH_Y",
 	"UNKNOWN_SUBSTANCE",
 	"GRIME",
+}
+
+func (i BuiltinIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	return prettyPrintIndex(int64(i), builtinMaterials[:], buf)
+}
+
+type MaterialBuiltin struct {
+	T BuiltinIndex
+	I int32
 }
 
 func (m MaterialBuiltin) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
@@ -107,38 +113,12 @@ func (m MaterialBuiltin) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 
 type MaterialInorganic struct {
 	T uint16
-	I int32
-}
-
-func (m MaterialInorganic) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = append(buf, '{')
-	indent = append(indent, '\t')
-
-	buf = append(buf, indent...)
-	buf = append(buf, "T: "...)
-	buf = prettyPrint(w, reflect.ValueOf(m.T), buf, indent)
-
-	// TODO: human-readable types
-
-	buf = append(buf, indent...)
-	buf = append(buf, "I: "...)
-	buf = prettyPrint(w, reflect.ValueOf(m.I), buf, indent)
-
-	if m.I >= 0 && int(m.I) < len(w.StringTables.Inorganic) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Inorganic[m.I]...)
-		buf = append(buf, ')')
-	}
-
-	buf = append(buf, indent[:len(indent)-1]...)
-	buf = append(buf, '}')
-
-	return buf
+	I InorganicIndex
 }
 
 type MaterialCreature struct {
 	T uint16
-	I int32
+	I CreatureIndex
 }
 
 func (m MaterialCreature) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
@@ -154,12 +134,6 @@ func (m MaterialCreature) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 	buf = append(buf, indent...)
 	buf = append(buf, "I: "...)
 	buf = prettyPrint(w, reflect.ValueOf(m.I), buf, indent)
-
-	if m.I >= 0 && int(m.I) < len(w.StringTables.Creature) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Creature[m.I]...)
-		buf = append(buf, ')')
-	}
 
 	buf = append(buf, indent[:len(indent)-1]...)
 	buf = append(buf, '}')
@@ -196,7 +170,7 @@ func (m MaterialFigure) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 
 type MaterialPlant struct {
 	T uint16
-	I int32
+	I PlantIndex
 }
 
 func (m MaterialPlant) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
@@ -212,12 +186,6 @@ func (m MaterialPlant) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 	buf = append(buf, indent...)
 	buf = append(buf, "I: "...)
 	buf = prettyPrint(w, reflect.ValueOf(m.I), buf, indent)
-
-	if m.I >= 0 && int(m.I) < len(w.StringTables.Plant) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Plant[m.I]...)
-		buf = append(buf, ')')
-	}
 
 	buf = append(buf, indent[:len(indent)-1]...)
 	buf = append(buf, '}')
@@ -445,16 +413,5 @@ var itemTypes = [...]string{
 }
 
 func (i ItemType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendInt(buf, int64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if i >= 0 && int(i) < len(itemTypes) {
-		buf = append(buf, " ("...)
-		buf = append(buf, itemTypes[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
+	return prettyPrintIndex(int64(i), itemTypes[:], buf)
 }

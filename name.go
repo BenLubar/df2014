@@ -1,7 +1,5 @@
 package df2014
 
-import "strconv"
-
 type NameForm uint16
 
 const (
@@ -17,64 +15,19 @@ const (
 )
 
 var nameForms = [...]string{
-	NameNounSingular:      "singular noun",
-	NameNounPlural:        "plural noun",
-	NameAdjective:         "adjective",
-	NamePrefix:            "prefix",
-	NamePresent1st:        "present first person",
-	NamePresent3rd:        "present third person",
-	NamePreterite:         "preterite",
-	NamePastParticiple:    "past participle",
-	NamePresentParticiple: "present participle",
+	"singular noun",
+	"plural noun",
+	"adjective",
+	"prefix",
+	"present first person",
+	"present third person",
+	"preterite",
+	"past participle",
+	"present participle",
 }
 
 func (i NameForm) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendUint(buf, uint64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if int(i) < len(nameForms) {
-		buf = append(buf, " ("...)
-		buf = append(buf, nameForms[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
-}
-
-type WordIndex int32
-
-func (i WordIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendInt(buf, int64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if i >= 0 && int(i) < len(w.StringTables.Word) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Word[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
-}
-
-type TranslationIndex int32
-
-func (i TranslationIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendInt(buf, int64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if i >= 0 && int(i) < len(w.StringTables.Translation) {
-		buf = append(buf, " ("...)
-		buf = append(buf, w.StringTables.Translation[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
+	return prettyPrintIndex(int64(i), nameForms[:], buf)
 }
 
 type Name struct {
