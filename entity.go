@@ -60,50 +60,77 @@ func (i EntityCreatureIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte
 	return buf
 }
 
+type RaceCasteList struct {
+	Race  []uint32
+	Caste []uint16 `df2014_assert_same_length_as:"Race"`
+}
+
+func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	buf = append(buf, "(len = "...)
+	buf = strconv.AppendInt(buf, int64(len(rcl.Race)), 10)
+	buf = append(buf, ") {"...)
+
+	indent = append(indent, '\t')
+
+	for i, r := range rcl.Race {
+		c := rcl.Caste[i]
+
+		buf = append(buf, indent...)
+		buf = strconv.AppendInt(buf, int64(i), 10)
+		buf = append(buf, ": "...)
+		buf = strconv.AppendUint(buf, uint64(r), 10)
+		buf = append(buf, " (0x"...)
+		buf = strconv.AppendUint(buf, uint64(r), 16)
+		buf = append(buf, ')')
+		if r >= 0 && int(r) < len(w.StringTables.Creature) {
+			buf = append(buf, " ("...)
+			buf = append(buf, w.StringTables.Creature[r]...)
+			buf = append(buf, ')')
+		}
+		buf = append(buf, ": "...)
+		buf = strconv.AppendUint(buf, uint64(c), 10)
+		buf = append(buf, " (0x"...)
+		buf = strconv.AppendUint(buf, uint64(c), 16)
+		buf = append(buf, ')')
+	}
+
+	buf = append(buf, indent[:len(indent)-1]...)
+	buf = append(buf, '}')
+
+	return buf
+}
+
 type Entity struct {
-	Type     EntityType `df2014_assert_equals:"0x0"`
-	ID       uint32
-	Class    string
-	Unk000   uint16 //`df2014_assert_equals:"0x19"`
-	Unk001   uint16 //`df2014_assert_equals:"0x4b"`
-	Unk002   uint32
-	Unk003   uint16 //`df2014_assert_equals:"0x0"`
-	Name     *Name
-	Creature EntityCreatureIndex
-	Unk004   uint32 //`df2014_assert_equals:"0x0"`
+	Type         EntityType
+	ID           uint32
+	Class        string
+	Unk000       uint16 //`df2014_assert_equals:"0x19"`
+	Unk001       uint16 //`df2014_assert_equals:"0x4b"`
+	SaveFileID   uint32
+	NextMemberID uint16
+	Name         *Name
+	Creature     EntityCreatureIndex
+	Flags        uint32
 
 	Materials EntityMaterials
 
-	Unk042 []uint32
-	Unk043 []uint16 `df2014_assert_same_length_as:"Unk042"`
-	Unk044 []uint32
-	Unk045 []uint16 `df2014_assert_same_length_as:"Unk044"`
-	Unk046 MaterialList
-	Unk048 uint32 `df2014_assert_equals:"0x0"`
-	Unk049 uint32 `df2014_assert_equals:"0x0"`
-	Unk050 []uint32
-	Unk051 []uint16 `df2014_assert_same_length_as:"Unk050"`
-	Unk052 MaterialList
-	Unk054 []uint16
-	Unk055 []int16 `df2014_assert_same_length_as:"Unk054"`
-	Unk056 MaterialList
-	Unk058 []uint32
-	Unk059 []uint16 `df2014_assert_same_length_as:"Unk058"`
-	Unk060 []uint32
-	Unk061 []uint16 `df2014_assert_same_length_as:"Unk060"`
-	Unk062 []uint32
-	Unk063 []uint16 `df2014_assert_same_length_as:"Unk062"`
-	Unk064 []uint32
-	Unk065 []uint16 `df2014_assert_same_length_as:"Unk064"`
-	Unk066 []uint32
-	Unk067 []uint16 `df2014_assert_same_length_as:"Unk066"`
-	Unk068 []uint32
-	Unk069 []uint16 `df2014_assert_same_length_as:"Unk068"`
-	Unk070 []uint32
-	Unk071 []uint16 `df2014_assert_same_length_as:"Unk070"`
-
-	Unk072 []uint16
-	Unk073 []uint32 `df2014_assert_same_length_as:"Unk072"`
+	Fish         RaceCasteList
+	Egg          RaceCasteList
+	Plant        MaterialList
+	Unk048       uint32 `df2014_assert_equals:"0x0"`
+	Unk049       uint32 `df2014_assert_equals:"0x0"`
+	Unk050       []uint32
+	Unk051       []uint16 `df2014_assert_same_length_as:"Unk050"`
+	Seed         MaterialList
+	WoodProducts ItemMaterialList
+	Pet          RaceCasteList
+	Wagon        RaceCasteList
+	PackAnimal   RaceCasteList
+	WagonPuller  RaceCasteList
+	Mount        RaceCasteList
+	Minion       RaceCasteList
+	ExoticPet    RaceCasteList
+	Wood         MaterialList
 
 	Unk074 []uint32
 	Unk075 []uint32
