@@ -11,6 +11,13 @@ type MaterialList struct {
 }
 
 func (ml MaterialList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	if len(ml.Type) != len(ml.Index) {
+		return prettyPrint(w, reflect.ValueOf(struct {
+			Type  []MaterialType
+			Index []int32
+		}{ml.Type, ml.Index}), buf, indent)
+	}
+
 	buf = append(buf, "(len = "...)
 	buf = strconv.AppendInt(buf, int64(len(ml.Type)), 10)
 	buf = append(buf, ") {"...)
@@ -201,6 +208,15 @@ type ItemMaterialList struct {
 }
 
 func (iml ItemMaterialList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	if len(iml.Type) != len(iml.Sub) || len(iml.Sub) != len(iml.Material) || len(iml.Material) != len(iml.Index) {
+		return prettyPrint(w, reflect.ValueOf(struct {
+			Type     []ItemType
+			Sub      []int16
+			Material []MaterialType
+			Index    []int32
+		}{iml.Type, iml.Sub, iml.Material, iml.Index}), buf, indent)
+	}
+
 	buf = append(buf, "(len = "...)
 	buf = strconv.AppendInt(buf, int64(len(iml.Type)), 10)
 	buf = append(buf, ") {"...)

@@ -167,34 +167,25 @@ type Entity struct {
 	Unk114 []uint16
 	Unk115 []uint16
 
-	Unk116 []uint16
-	Unk117 []uint32 `df2014_assert_same_length_as:"Unk116"`
-	Unk118 []uint16
-	Unk119 []uint32 `df2014_assert_same_length_as:"Unk118"`
-	Unk120 []uint16
-	Unk121 []uint32 `df2014_assert_same_length_as:"Unk120"`
-	Unk122 []uint16
-	Unk123 []uint32 `df2014_assert_same_length_as:"Unk122"`
-	Unk124 []uint16
-	Unk125 []uint32 `df2014_assert_same_length_as:"Unk124"`
-	Unk126 []uint16
-	Unk127 []uint32 `df2014_assert_same_length_as:"Unk126"`
-	Unk128 []uint16
-	Unk129 []uint32 `df2014_assert_same_length_as:"Unk128"`
-	Unk130 []uint16
-	Unk131 []uint32 `df2014_assert_same_length_as:"Unk130"`
-	Unk132 []uint16
-	Unk133 []uint32 `df2014_assert_same_length_as:"Unk132"`
+	Unk116 MaterialList
+	Unk118 MaterialList
+	Unk120 MaterialList
+	Unk122 MaterialList
+	Unk124 MaterialList
+	Unk126 MaterialList
+	Unk128 MaterialList
+	Unk130 MaterialList
+	Unk132 MaterialList
 
-	Unk134      uint32 `df2014_assert_equals:"0x0"`
-	Unk135      uint32 `df2014_assert_equals:"0x0"`
+	Unk134 uint32 `df2014_assert_equals:"0x0"`
+	Unk135 uint32 `df2014_assert_equals:"0x0"`
+
 	EntityLinks []EntityEntityLink
 	SiteLinks   []EntitySiteLink
-	FigureIDs   []uint32
+	Figures     []uint32
+	Populations []uint32
+	Nemises     []uint32
 
-	Unk139   uint32 `df2014_assert_equals:"0x1"`
-	Unk139_1 uint32
-	Unk139_2 []uint32
 	Unk140   uint32 `df2014_assert_equals:"0x1"`
 	Unk140_1 uint16
 	Unk141   uint32 `df2014_assert_equals:"0x1"`
