@@ -431,3 +431,39 @@ var itemTypes = [...]string{
 func (i ItemType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 	return prettyPrintIndex(int64(i), itemTypes[:], buf)
 }
+
+type PlantGrowthList struct {
+	Plant  []PlantIndex
+	Growth []int16 `df2014_assert_same_length_as:"Plant"`
+}
+
+func (pgl PlantGrowthList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	if len(pgl.Plant) != len(pgl.Growth) {
+		return prettyPrint(w, reflect.ValueOf(struct {
+			Plant  []PlantIndex
+			Growth []int16
+		}{pgl.Plant, pgl.Growth}), buf, indent)
+	}
+
+	buf = append(buf, "(len = "...)
+	buf = strconv.AppendInt(buf, int64(len(pgl.Plant)), 10)
+	buf = append(buf, ") {"...)
+
+	indent = append(indent, '\t')
+
+	for i, p := range pgl.Plant {
+		g := pgl.Growth[i]
+
+		buf = append(buf, indent...)
+		buf = strconv.AppendInt(buf, int64(i), 10)
+		buf = append(buf, ": "...)
+		buf = prettyPrint(w, reflect.ValueOf(p), buf, indent)
+		buf = append(buf, ": "...)
+		buf = prettyPrint(w, reflect.ValueOf(g), buf, indent)
+	}
+
+	buf = append(buf, indent[:len(indent)-1]...)
+	buf = append(buf, '}')
+
+	return buf
+}

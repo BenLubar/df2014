@@ -132,8 +132,8 @@ type Entity struct {
 	ID    uint32
 	Class string
 
-	Unk000 uint16 // dfhack:resources.unk15a 25 on subterranean_animal_peoples civs
-	Unk001 uint16 // dfhack:resources.unk15b 75 on [...], always ≥ Unk000
+	Unk000 int16 // dfhack:resources.unk15a 25 on subterranean_animal_peoples civs
+	Unk001 int16 // dfhack:resources.unk15b 75 on [...], always ≥ Unk000
 
 	SaveFileID   uint32
 	NextMemberID uint16
@@ -352,10 +352,8 @@ type EntityResources struct {
 	Fish         RaceCasteList
 	Egg          RaceCasteList
 	Plant        MaterialList
-	Unk000       uint32 `df2014_assert_equals:"0x0"`
-	Unk001       uint32 `df2014_assert_equals:"0x0"`
-	Unk002       []uint32
-	Unk003       []uint16 `df2014_assert_same_length_as:"Unk002"`
+	Orchard      PlantGrowthList
+	Garden       PlantGrowthList
 	Seed         MaterialList
 	WoodProducts ItemMaterialList
 	Pet          RaceCasteList
