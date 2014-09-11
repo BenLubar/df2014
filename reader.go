@@ -311,7 +311,7 @@ func (r *Reader) header() (h Header, err error) {
 		return
 	}
 
-	if h.Version != 1456 {
+	if h.Version != 1459 {
 		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
 		return
 	}

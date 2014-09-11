@@ -186,12 +186,9 @@ type Entity struct {
 	Populations []uint32
 	Nemises     []uint32
 
-	Unk140   uint32 `df2014_assert_equals:"0x1"`
-	Unk140_1 uint16
-	Unk141   uint32 `df2014_assert_equals:"0x1"`
-	Unk141_1 uint32
-	Unk142   uint32 `df2014_assert_equals:"0x1"`
-	Unk142_1 uint16
+	ArtImageTypes  []uint16
+	ArtImageIDs    []uint32 `df2014_assert_same_length_as:"ArtImageTypes"`
+	ArtImageSubIDs []uint16 `df2014_assert_same_length_as:"ArtImageTypes"`
 
 	Unk143 uint32 `df2014_assert_equals:"0x1"`
 	Unk144 uint32
@@ -206,10 +203,10 @@ type Entity struct {
 	Unk150 uint32 `df2014_assert_equals:"0x1"`
 	Unk151 uint16
 
-	Unk152 uint32 `df2014_assert_equals:"0x1"`
-	Unk153 uint32
+	Unk152   uint32 `df2014_assert_equals:"0x1"`
+	Unk153_1 uint16
 
-	Unk154_1 uint16 `df2014_assert_equals:"0x0"`
+	Unk153_2 uint32 `df2014_assert_equals:"0x0"`
 	Unk154_2 uint16 `df2014_assert_equals:"0x0"`
 	Unk155_1 uint16 `df2014_assert_equals:"0x0"`
 	Unk155_2 uint16 `df2014_assert_equals:"0x0"`
