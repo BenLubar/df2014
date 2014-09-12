@@ -10,6 +10,15 @@ import (
 	"strconv"
 )
 
+type NestedError struct {
+	Message string
+	Inner   error
+}
+
+func (err NestedError) Error() string {
+	return err.Message + "\n" + err.Inner.Error()
+}
+
 type Reader struct {
 	io.Reader
 }
@@ -18,7 +27,15 @@ func (r *Reader) Decode(v interface{}) error {
 	return r.DecodeValue(reflect.ValueOf(v).Elem())
 }
 
-func (r *Reader) DecodeValue(v reflect.Value) error {
+func (r *Reader) DecodeValue(v reflect.Value) (err error) {
+	defer func() {
+		if err == nil {
+			if r := recover(); r != nil {
+				err = r.(error)
+			}
+		}
+	}()
+
 	switch v.Kind() {
 	case reflect.Struct:
 		if _, ok := v.Interface().(Header); ok {
@@ -46,13 +63,13 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 					err := r.DecodeValue(v.Field(i).Index(j))
 					if err != nil {
 						v.Field(i).SetLen(j + 1) // hide the entries that we didn't get to
-						return err
+						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), err}}
 					}
 				}
 			} else {
 				err := r.DecodeValue(v.Field(i))
 				if err != nil {
-					return err
+					return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), err}
 				}
 			}
 
@@ -151,7 +168,7 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		return nil
 
 	case reflect.Slice:
-		var length uint32
+		var length int32 // signed so huge numbers cause errors instead of allocating tons of memory
 		err := binary.Read(r, binary.LittleEndian, &length)
 		if err != nil {
 			return err
@@ -164,7 +181,7 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		for i, l := 0, v.Len(); i < l; i++ {
 			err := r.DecodeValue(v.Index(i))
 			if err != nil {
-				return err
+				return NestedError{fmt.Sprintf("at index %d", i), err}
 			}
 		}
 		return nil
@@ -181,7 +198,7 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		return binary.Read(r, binary.LittleEndian, v.Addr().Interface())
 
 	case reflect.Map:
-		var length uint32
+		var length int32 // signed so huge numbers cause errors instead of allocating tons of memory
 		err := binary.Read(r, binary.LittleEndian, &length)
 		if err != nil {
 			return err
@@ -219,7 +236,7 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 			trueVal := reflect.New(v.Type().Elem()).Elem()
 			trueVal.SetBool(true)
 
-			for i := uint32(0); i < length; i++ {
+			for i := int32(0); i < length; i++ {
 				key := reflect.New(v.Type().Key()).Elem()
 
 				r.DecodeValue(key)
@@ -236,7 +253,7 @@ func (r *Reader) DecodeValue(v reflect.Value) error {
 		} else {
 			// it's a mapping
 
-			for i := uint32(0); i < length; i++ {
+			for i := int32(0); i < length; i++ {
 				key := reflect.New(v.Type().Key()).Elem()
 				val := reflect.New(v.Type().Elem()).Elem()
 
@@ -281,7 +298,7 @@ func (r *Reader) bool() (b bool, err error) {
 var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\xA0")
 
 func (r *Reader) string() (string, error) {
-	var length uint16
+	var length int16 // signed so huge numbers cause errors instead of allocating tons of memory
 	err := binary.Read(r, binary.LittleEndian, &length)
 	if err != nil {
 		return "", err
@@ -353,7 +370,7 @@ func (r *compression1Reader) Read(p []byte) (n int, err error) {
 }
 
 func (r *compression1Reader) fill() (err error) {
-	var length uint32
+	var length int32 // signed so huge numbers cause errors instead of allocating tons of memory
 	err = binary.Read(r.r, binary.LittleEndian, &length)
 	if err != nil {
 		return

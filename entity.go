@@ -190,62 +190,44 @@ type Entity struct {
 	ArtImageIDs    []uint32 `df2014_assert_same_length_as:"ArtImageTypes"`
 	ArtImageSubIDs []uint16 `df2014_assert_same_length_as:"ArtImageTypes"`
 
-	Unk143 uint32 `df2014_assert_equals:"0x1"`
-	Unk144 uint32
-	Unk145 uint16 // flags?
+	Unk143 []EntityUnk143
+	Unk146 []uint8
+	Unk148 []bool
+	Unk150 []uint16
+	Unk152 []uint16
+	Unk153 []EntityUnk153
+	Unk154 []uint16
+	Unk155 []uint16
+	Unk156 []EntityUnk156
+	Unk157 []EntityUnk157
+	Unk158 []uint16
+	Unk159 []uint16
+	Unk160 []uint16
 
-	Unk146 uint32 `df2014_assert_equals:"0x1"`
-	Unk147 uint8
-
-	Unk148 uint32 `df2014_assert_equals:"0x1"`
-	Unk149 bool
-
-	Unk150 uint32 `df2014_assert_equals:"0x1"`
-	Unk151 uint16
-
-	Unk152   uint32 `df2014_assert_equals:"0x1"`
-	Unk153_1 uint16
-
-	Unk153_2 uint32 `df2014_assert_equals:"0x0"`
-	Unk154_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk155_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk155_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk156_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk156_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk157_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk157_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk158_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk158_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk159_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk159_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk160_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk160_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk161_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk161_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk162_1 uint16 `df2014_assert_equals:"0x0"`
-	Unk162_2 uint16 `df2014_assert_equals:"0x0"`
-	Unk163   uint16 `df2014_assert_equals:"0xd"`
-	Unk164   uint16 `df2014_assert_equals:"0x10"`
-	Unk165   uint16 `df2014_assert_equals:"0x10"`
-	Unk166   uint16 `df2014_assert_equals:"0x1"`
-	Unk167   uint16 `df2014_assert_equals:"0x1"`
-	Unk168   uint16 `df2014_assert_equals:"0xf"`
-	Unk169   uint16 `df2014_assert_equals:"0x0"`
-	Unk170   uint16 `df2014_assert_equals:"0x1"`
-	Unk171   uint16 `df2014_assert_equals:"0xf"`
-	Unk172   uint16 `df2014_assert_equals:"0xf"`
-	Unk173   uint16 `df2014_assert_equals:"0x0"`
-	Unk174   uint16 `df2014_assert_equals:"0x0"`
-	Unk175   uint16 `df2014_assert_equals:"0x0"`
-	Unk176   uint16 `df2014_assert_equals:"0x0"`
-	Unk177   uint16 `df2014_assert_equals:"0x0"`
-	Unk178   uint16 `df2014_assert_equals:"0x2"`
-	Unk179   uint16 `df2014_assert_equals:"0xf"`
-	Unk180   uint16 `df2014_assert_equals:"0xf"`
-	Unk181   uint16 `df2014_assert_equals:"0xf"`
-	Unk182   uint16 `df2014_assert_equals:"0xf"`
-	Unk183   uint16 `df2014_assert_equals:"0xf"`
-	Unk184   uint16 `df2014_assert_equals:"0xf"`
+	Unk161 uint32 `df2014_assert_equals:"0x0"`
+	Unk162 uint16 `df2014_assert_equals:"0x0"`
+	Unk163 uint16 `df2014_assert_equals:"0xd"`
+	Unk164 uint16 `df2014_assert_equals:"0x10"`
+	Unk165 uint16 `df2014_assert_equals:"0x10"`
+	Unk166 uint16 `df2014_assert_equals:"0x1"`
+	Unk167 uint16 `df2014_assert_equals:"0x1"`
+	Unk168 uint16 `df2014_assert_equals:"0xf"`
+	Unk169 uint16 `df2014_assert_equals:"0x0"`
+	Unk170 uint16 `df2014_assert_equals:"0x1"`
+	Unk171 uint16 `df2014_assert_equals:"0xf"`
+	Unk172 uint16 `df2014_assert_equals:"0xf"`
+	Unk173 uint16 `df2014_assert_equals:"0x0"`
+	Unk174 uint16 `df2014_assert_equals:"0x0"`
+	Unk175 uint16 `df2014_assert_equals:"0x0"`
+	Unk176 uint16 `df2014_assert_equals:"0x0"`
+	Unk177 uint16 `df2014_assert_equals:"0x0"`
+	Unk178 uint16 `df2014_assert_equals:"0x2"`
+	Unk179 uint16 `df2014_assert_equals:"0xf"`
+	Unk180 uint16 `df2014_assert_equals:"0xf"`
+	Unk181 uint16 `df2014_assert_equals:"0xf"`
+	Unk182 uint16 `df2014_assert_equals:"0xf"`
+	Unk183 uint16 `df2014_assert_equals:"0xf"`
+	Unk184 uint16 `df2014_assert_equals:"0xf"`
 
 	Unk185 uint32 `df2014_assert_equals:"0x0"`
 	Unk186 uint32 `df2014_assert_equals:"0x0"`
@@ -423,6 +405,30 @@ type EntitySiteLink struct {
 	Unk011 uint32 `df2014_assert_equals:"0x64"`
 	Unk012 uint32 `df2014_assert_equals:"0x0"`
 	Unk013 uint32 `df2014_assert_equals:"0x0"`
+}
+
+type EntityUnk143 struct {
+	Unk000 uint32
+	Unk001 uint16 // flags?
+}
+
+type EntityUnk153 struct {
+	Unk000 uint32 `df2014_assert_equals:"0x0"`
+	Unk001 uint16 `df2014_assert_equals:"0x3"`
+}
+
+type EntityUnk156 struct {
+	Unk000 bool  `df2014_assert_equals:"true"`
+	Unk001 int8  `df2014_assert_equals:"-1"`
+	Unk002 int16 `df2014_assert_equals:"-1"`
+}
+
+type EntityUnk157 struct {
+	Unk000 uint16 `df2014_assert_equals:"0x108"`
+	Unk001 int16  `df2014_assert_equals:"-1"`
+	Unk002 uint16 `df2014_assert_equals:"0x4"`
+	Unk003 int32  `df2014_assert_equals:"-1"`
+	Unk004 int32  `df2014_assert_equals:"-1"`
 }
 
 type EntityUnk251 struct {
