@@ -174,9 +174,11 @@ type Entity struct {
 	Unk124 MaterialList
 	Unk126 MaterialList
 	Unk128 MaterialList
-	Unk130 MaterialList
-	Unk132 MaterialList
 
+	Unk130 uint32 `df2014_assert_equals:"0x0"`
+	Unk131 uint32 `df2014_assert_equals:"0x0"`
+	Unk132 uint32 `df2014_assert_equals:"0x0"`
+	Unk133 uint32 `df2014_assert_equals:"0x0"`
 	Unk134 uint32 `df2014_assert_equals:"0x0"`
 	Unk135 uint32 `df2014_assert_equals:"0x0"`
 
@@ -190,21 +192,24 @@ type Entity struct {
 	ArtImageIDs    []uint32 `df2014_assert_same_length_as:"ArtImageTypes"`
 	ArtImageSubIDs []uint16 `df2014_assert_same_length_as:"ArtImageTypes"`
 
-	Unk143 []EntityUnk143
-	Unk146 []uint8
-	Unk148 []bool
-	Unk150 []uint16
-	Unk152 []uint16
+	DummyOneLengthArray [1]struct{}
+
+	Unk143 []EntityUnk143 `df2014_assert_same_length_as:"DummyOneLengthArray"`
+	Unk146 []uint8        `df2014_assert_same_length_as:"DummyOneLengthArray"`
+	Unk148 []bool         `df2014_assert_same_length_as:"DummyOneLengthArray"`
+	Unk150 []uint16       `df2014_assert_same_length_as:"DummyOneLengthArray"`
+	Unk152 []uint16       `df2014_assert_same_length_as:"DummyOneLengthArray"`
 	Unk153 []EntityUnk153
 	Unk154 []uint16
 	Unk155 []uint16
 	Unk156 []EntityUnk156
 	Unk157 []EntityUnk157
-	Unk158 []uint16
-	Unk159 []uint16
-	Unk160 []uint16
 
+	Unk158 uint32 `df2014_assert_equals:"0x0"`
+	Unk159 uint32 `df2014_assert_equals:"0x0"`
+	Unk160 uint32 `df2014_assert_equals:"0x0"`
 	Unk161 uint32 `df2014_assert_equals:"0x0"`
+
 	Unk162 uint16 `df2014_assert_equals:"0x0"`
 	Unk163 uint16 `df2014_assert_equals:"0xd"`
 	Unk164 uint16 `df2014_assert_equals:"0x10"`

@@ -28,14 +28,6 @@ func (r *Reader) Decode(v interface{}) error {
 }
 
 func (r *Reader) DecodeValue(v reflect.Value) (err error) {
-	defer func() {
-		if err == nil {
-			if r := recover(); r != nil {
-				err = r.(error)
-			}
-		}
-	}()
-
 	switch v.Kind() {
 	case reflect.Struct:
 		if _, ok := v.Interface().(Header); ok {
@@ -173,6 +165,9 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 		if err != nil {
 			return err
 		}
+		if length < 0 {
+			return fmt.Errorf("df2014: negative length (%d)", length)
+		}
 
 		v.Set(reflect.MakeSlice(v.Type(), int(length), int(length)))
 
@@ -202,6 +197,9 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 		err := binary.Read(r, binary.LittleEndian, &length)
 		if err != nil {
 			return err
+		}
+		if length < 0 {
+			return fmt.Errorf("df2014: negative length (%d)", length)
 		}
 
 		v.Set(reflect.MakeMap(v.Type()))
@@ -303,6 +301,9 @@ func (r *Reader) string() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if length < 0 {
+		return "", fmt.Errorf("df2014: negative length (%d)", length)
+	}
 
 	buf := make([]byte, length)
 	_, err = io.ReadFull(r, buf)
@@ -374,6 +375,9 @@ func (r *compression1Reader) fill() (err error) {
 	err = binary.Read(r.r, binary.LittleEndian, &length)
 	if err != nil {
 		return
+	}
+	if length < 0 {
+		return fmt.Errorf("df2014: negative length (%d)", length)
 	}
 
 	var buf bytes.Buffer
