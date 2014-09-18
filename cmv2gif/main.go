@@ -67,7 +67,7 @@ func main() {
 		for x, col := range frame.Attributes {
 			for y, attr := range col {
 				tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
-				draw.Draw(img, tile, tileset.Bg(0x7f), image.ZP, draw.Src)
+				draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
 				fg := tileset.Fg(frame.Characters[x][y], attr)
 				draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
 			}
