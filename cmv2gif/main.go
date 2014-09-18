@@ -14,11 +14,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 )
 
 var (
+	flagCPUs    = flag.Int("cpus", runtime.NumCPU(), "number of threads to use")
 	flagTileset = flag.String("t", "", "path to a tileset")
 	flagInput   = flag.String("i", "input.cmv", "path to a cmv file")
 	flagOutput  = flag.String("o", "output.gif", "path to write the output")
@@ -26,6 +28,8 @@ var (
 
 func main() {
 	flag.Parse()
+
+	runtime.GOMAXPROCS(*flagCPUs)
 
 	tileset, err := NewTilesetFromFile(*flagTileset)
 	if err != nil {
@@ -56,30 +60,42 @@ func main() {
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
 	tileSize := image.Rect(0, 0, tileset.size.X, tileset.size.Y)
 
+	procs := runtime.GOMAXPROCS(0)
 	var wg sync.WaitGroup
-	wg.Add(len(movie.Frames))
+	wg.Add(procs)
 
-	render := func(i int, frame df2014.CMVFrame, out **image.Paletted) {
-		defer wg.Done()
+	type task struct {
+		frame df2014.CMVFrame
+		out   **image.Paletted
+	}
 
-		img := image.NewPaletted(frameSize, palette.WebSafe)
+	tasks := make(chan task)
 
-		for x, col := range frame.Attributes {
-			for y, attr := range col {
-				tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
-				draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
-				fg := tileset.Fg(frame.Characters[x][y], attr)
-				draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
+	for i := 0; i < procs; i++ {
+		go func() {
+			defer wg.Done()
+
+			for t := range tasks {
+				img := image.NewPaletted(frameSize, palette.WebSafe)
+
+				for x, col := range t.frame.Attributes {
+					for y, attr := range col {
+						tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
+						draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
+						fg := tileset.Fg(t.frame.Characters[x][y], attr)
+						draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
+					}
+				}
+				*t.out = img
 			}
-		}
-
-		*out = img
+		}()
 	}
 
 	output.Image = make([]*image.Paletted, len(movie.Frames))
 	for i, frame := range movie.Frames {
-		go render(i, frame, &output.Image[i])
+		tasks <- task{frame, &output.Image[i]}
 	}
+	close(tasks)
 	wg.Wait()
 
 	f, err := os.Create(*flagOutput)
