@@ -183,7 +183,7 @@ type Entity struct {
 	Unk135 uint32 `df2014_assert_equals:"0x0"`
 
 	EntityLinks []EntityEntityLink
-	SiteLinks   []EntitySiteLink
+	SiteLinks   []EntitySiteLink `df2014_assert_id_parent:"EntityID"`
 	Figures     []uint32
 	Populations []uint32
 	Nemises     []uint32
@@ -392,24 +392,24 @@ func (i EntityEntityLinkType) prettyPrint(w *WorldDat, buf, indent []byte) []byt
 type EntityEntityLink struct {
 	Type     EntityEntityLinkType
 	ID       uint32
-	Strength uint16
+	Strength uint16 `df2014_assert_lte:"100"`
 }
 
 type EntitySiteLink struct {
-	Unk000 uint32
-	Unk001 uint32
-	Unk002 uint32
-	Unk003 uint32
-	Unk004 int32 `df2014_assert_equals:"-1"`
-	Unk005 int32 `df2014_assert_equals:"-1"`
-	Unk006 uint32
-	Unk007 uint32
-	Unk008 uint32
-	Unk009 uint32
-	Unk010 uint32
-	Unk011 uint32 `df2014_assert_equals:"0x64"`
-	Unk012 uint32 `df2014_assert_equals:"0x0"`
-	Unk013 uint32 `df2014_assert_equals:"0x0"`
+	SiteID   uint32
+	EntityID uint32
+	Unk002   int32 `df2014_assert_gte:"-1"`
+	Unk003   int32 `df2014_assert_gte:"-1"`
+	Unk004   int32 `df2014_assert_equals:"-1"`
+	Unk005   int32 `df2014_assert_equals:"-1"`
+	Unk006   uint32
+	Unk007   uint32
+	Unk008   uint32 `df2014_assert_equals:"0x0"` // according to dfhack, this is a vector of pointers
+	Unk009   uint32
+	Unk010   uint32
+	Strength uint32 `df2014_assert_lte:"100"`
+	Unk012   uint32 `df2014_assert_equals:"0x0"`
+	Unk013   uint32 `df2014_assert_equals:"0x0"`
 }
 
 type EntityUnk143 struct {

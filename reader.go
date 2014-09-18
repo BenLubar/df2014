@@ -46,6 +46,14 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 			v.Set(reflect.ValueOf(b))
 			return nil
 		}
+		if _, ok := v.Interface().(CMV); ok {
+			h, err := r.cmv()
+			if err != nil {
+				return err
+			}
+			v.Set(reflect.ValueOf(h))
+			return nil
+		}
 		for i := 0; i < v.NumField(); i++ {
 			if tag := v.Type().Field(i).Tag.Get("df2014_get_length_from"); tag != "" {
 				l := v.FieldByName(tag).Len()
@@ -107,6 +115,29 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 					}
 				}
 			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_lte"); tag != "" {
+				switch v.Field(i).Kind() {
+				case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					actual := v.Field(i).Int()
+					expected, err := strconv.ParseInt(tag, 0, v.Field(i).Type().Bits())
+					if err != nil {
+						return err
+					}
+					if actual > expected {
+						return fmt.Errorf("df2014: %s: %d ≰ %d", v.Type().Field(i).Name, actual, expected)
+					}
+
+				case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+					actual := v.Field(i).Uint()
+					expected, err := strconv.ParseUint(tag, 0, v.Field(i).Type().Bits())
+					if err != nil {
+						return err
+					}
+					if actual > expected {
+						return fmt.Errorf("df2014: %s: %d ≰ %d", v.Type().Field(i).Name, actual, expected)
+					}
+				}
+			}
 			if tag := v.Type().Field(i).Tag.Get("df2014_assert_id_set"); tag != "" {
 				want := make(map[interface{}]bool, v.FieldByName(tag).Len())
 				for _, id := range v.FieldByName(tag).MapKeys() {
@@ -132,7 +163,16 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 				}
 
 				if len(missing) > 0 || len(unexpected) > 0 {
-					fmt.Errorf("df2014: %s: ids missing=%v unexpected=%v", v.Type().Field(i).Name, missing, unexpected)
+					return fmt.Errorf("df2014: %s: ids missing=%v unexpected=%v", v.Type().Field(i).Name, missing, unexpected)
+				}
+			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_assert_id_parent"); tag != "" {
+				expected := v.FieldByName("ID").Uint()
+				for j, l := 0, v.Field(i).Len(); j < l; j++ {
+					actual := v.Field(i).Index(j).FieldByName(tag).Uint()
+					if expected != actual {
+						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: id in parent (%d) does not match id in %s (%d)", expected, tag, actual)}}
+					}
 				}
 			}
 		}
