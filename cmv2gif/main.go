@@ -9,18 +9,16 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/draw"
-	"image/gif"
 	_ "image/png"
 	"io"
 	"log"
 	"os"
-	"runtime"
-	"sync"
+	"strings"
 	"time"
 )
 
 var (
-	flagCPUs    = flag.Int("cpus", runtime.NumCPU(), "number of threads to use")
+	flagBuffer  = flag.Int("b", 0, "number of frames to go ahead")
 	flagTileset = flag.String("t", "", "path to a tileset")
 	flagInput   = flag.String("i", "input.cmv", "path to a cmv file")
 	flagOutput  = flag.String("o", "output.gif", "path to write the output")
@@ -29,7 +27,20 @@ var (
 func main() {
 	flag.Parse()
 
-	runtime.GOMAXPROCS(*flagCPUs)
+	switch len(flag.Args()) {
+	case 0:
+		// do nothing
+	case 1:
+		if *flagInput == "input.cmv" && *flagOutput == "output.gif" && strings.HasSuffix(flag.Arg(0), ".cmv") {
+			*flagInput = flag.Arg(0)
+			*flagOutput = strings.TrimSuffix(flag.Arg(0), ".cmv") + ".gif"
+			break
+		}
+		fallthrough
+	default:
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
 	tileset, err := NewTilesetFromFile(*flagTileset)
 	if err != nil {
@@ -50,53 +61,31 @@ func main() {
 		}
 	}
 
-	output := &gif.GIF{LoopCount: -1}
-	output.Delay = make([]int, len(movie.Frames))
-	for i := range output.Delay {
-		output.Delay[i] = int(movie.Header.FrameTime / (time.Second / 10))
-	}
+	delay := int(movie.Header.FrameTime / (time.Second / 10))
 
 	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
 	tileSize := image.Rect(0, 0, tileset.size.X, tileset.size.Y)
 
-	procs := runtime.GOMAXPROCS(0)
-	var wg sync.WaitGroup
-	wg.Add(procs)
+	frames := make(chan *image.Paletted, *flagBuffer)
 
-	type task struct {
-		frame df2014.CMVFrame
-		out   **image.Paletted
-	}
+	go func() {
+		for _, frame := range movie.Frames {
+			img := image.NewPaletted(frameSize, palette.WebSafe)
 
-	tasks := make(chan task)
-
-	for i := 0; i < procs; i++ {
-		go func() {
-			defer wg.Done()
-
-			for t := range tasks {
-				img := image.NewPaletted(frameSize, palette.WebSafe)
-
-				for x, col := range t.frame.Attributes {
-					for y, attr := range col {
-						tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
-						draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
-						fg := tileset.Fg(t.frame.Characters[x][y], attr)
-						draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
-					}
+			for x, col := range frame.Attributes {
+				for y, attr := range col {
+					tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
+					draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
+					fg := tileset.Fg(frame.Characters[x][y], attr)
+					draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
 				}
-				*t.out = img
 			}
-		}()
-	}
+			frames <- img
+		}
 
-	output.Image = make([]*image.Paletted, len(movie.Frames))
-	for i, frame := range movie.Frames {
-		tasks <- task{frame, &output.Image[i]}
-	}
-	close(tasks)
-	wg.Wait()
+		close(frames)
+	}()
 
 	f, err := os.Create(*flagOutput)
 	if err != nil {
@@ -104,7 +93,7 @@ func main() {
 	}
 	defer f.Close()
 
-	err = gif.EncodeAll(f, output)
+	err = EncodeAll(f, frames, delay)
 	if err != nil {
 		log.Fatal(err)
 	}
