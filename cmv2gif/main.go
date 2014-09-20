@@ -14,10 +14,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
 	flagBuffer  = flag.Int("b", 0, "number of frames to go ahead")
+	flagSpeed   = flag.Float64("s", 1, "speed multiplier")
 	flagTileset = flag.String("t", "", "path to a tileset")
 	flagInput   = flag.String("i", "input.cmv", "path to a cmv file")
 	flagOutput  = flag.String("o", "output.gif", "path to write the output")
@@ -61,7 +63,7 @@ func main() {
 		}
 	}
 
-	delay := 2 // 50fps
+	delay := int(float64(movie.Header.FrameTime/(time.Second/10)) / *flagSpeed)
 
 	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
