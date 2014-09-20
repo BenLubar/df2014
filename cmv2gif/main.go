@@ -14,7 +14,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 var (
@@ -22,6 +21,7 @@ var (
 	flagTileset = flag.String("t", "", "path to a tileset")
 	flagInput   = flag.String("i", "input.cmv", "path to a cmv file")
 	flagOutput  = flag.String("o", "output.gif", "path to write the output")
+	Palette     = palette.WebSafe
 )
 
 func main() {
@@ -61,7 +61,7 @@ func main() {
 		}
 	}
 
-	delay := int(movie.Header.FrameTime / (time.Second / 10))
+	delay := 2 // 50fps
 
 	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
@@ -71,14 +71,13 @@ func main() {
 
 	go func() {
 		for _, frame := range movie.Frames {
-			img := image.NewPaletted(frameSize, palette.WebSafe)
+			img := image.NewPaletted(frameSize, Palette)
 
 			for x, col := range frame.Attributes {
 				for y, attr := range col {
-					tile := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
-					draw.Draw(img, tile, tileset.Bg(attr), image.ZP, draw.Src)
-					fg := tileset.Fg(frame.Characters[x][y], attr)
-					draw.Draw(img, tile, fg, fg.Bounds().Min, draw.Over)
+					rect := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
+					tile := tileset.Tile(frame.Characters[x][y], attr)
+					fastDraw(img, rect, tile, tile.Bounds().Min)
 				}
 			}
 			frames <- img
@@ -123,7 +122,7 @@ var colors = map[df2014.CMVColor]color.RGBA{
 type Tileset struct {
 	size image.Point
 	tile image.Rectangle
-	set  map[df2014.CMVColor]*image.RGBA
+	set  [1 << 7]*image.Paletted
 }
 
 func NewTilesetFromFile(filename string) (*Tileset, error) {
@@ -172,37 +171,54 @@ func NewTileset(r io.Reader) (*Tileset, error) {
 	base := image.NewRGBA(img.Bounds())
 	draw.DrawMask(base, img.Bounds(), img, image.ZP, mask, image.ZP, draw.Src)
 
-	t.set = make(map[df2014.CMVColor]*image.RGBA, len(colors))
-	for k, v := range colors {
-
-		colorized := image.NewRGBA(base.Bounds())
+	for attr := range t.set {
+		colorized := image.NewPaletted(base.Bounds(), Palette)
 		for x := base.Bounds().Min.X; x < base.Bounds().Max.X; x++ {
 			for y := base.Bounds().Min.Y; y < base.Bounds().Max.Y; y++ {
-				colorized.Set(x, y, MultipliedColor{v, base.At(x, y)})
+				colorized.Set(x, y, TileColor{base.At(x, y), colors[df2014.CMVAttribute(attr).Fg()], colors[df2014.CMVAttribute(attr).Bg()]})
 			}
 		}
 
-		t.set[k] = colorized
+		t.set[attr] = colorized
 	}
 
 	return &t, nil
 }
 
-func (t *Tileset) Fg(char df2014.CMVCharacter, attr df2014.CMVAttribute) image.Image {
-	return t.set[attr.Fg()].SubImage(t.tile.Add(image.Point{t.size.X * int(char.Byte()&0xf), t.size.Y * int(char.Byte()>>4)}))
+func (t *Tileset) Tile(char df2014.CMVCharacter, attr df2014.CMVAttribute) *image.Paletted {
+	return t.set[attr].SubImage(t.tile.Add(image.Point{t.size.X * int(char.Byte()&0xf), t.size.Y * int(char.Byte()>>4)})).(*image.Paletted)
 }
 
-func (t *Tileset) Bg(attr df2014.CMVAttribute) image.Image {
-	return image.NewUniform(colors[attr.Bg()])
+type TileColor struct {
+	Base, Fg, Bg color.Color
 }
 
-type MultipliedColor struct {
-	A, B color.Color
+func (c TileColor) RGBA() (r, g, b, a uint32) {
+	r0, g0, b0, a0 := c.Base.RGBA()
+	r1, g1, b1, a1 := c.Fg.RGBA()
+	r2, g2, b2, a2 := c.Bg.RGBA()
+
+	a3 := 0xffff - a0*a1/0xffff
+
+	r = (r0*r1/0xffff + r2*a3/0xffff)
+	g = (g0*g1/0xffff + g2*a3/0xffff)
+	b = (b0*b1/0xffff + b2*a3/0xffff)
+	a = (a0*a1/0xffff + a2*a3/0xffff)
+
+	return
 }
 
-func (c MultipliedColor) RGBA() (r, g, b, a uint32) {
-	r0, g0, b0, a0 := c.A.RGBA()
-	r1, g1, b1, a1 := c.B.RGBA()
+// Assumptions:
+// dst and src do not overlap
+// dst and src have the same palette
+// the locations given are valid for both images
+//
+func fastDraw(dst *image.Paletted, r image.Rectangle, src *image.Paletted, sp image.Point) {
+	pix0, stride0 := dst.Pix[dst.PixOffset(r.Min.X, r.Min.Y):], dst.Stride
+	pix1, stride1 := src.Pix[src.PixOffset(sp.X, sp.Y):], src.Stride
 
-	return r0 * r1 / 0xffff, g0 * g1 / 0xffff, b0 * b1 / 0xffff, a0 * a1 / 0xffff
+	dx, dy := r.Dx(), r.Dy()
+	for y := 0; y < dy; y++ {
+		copy(pix0[stride0*y:stride0*y+dx], pix1[stride1*y:stride1*y+dx])
+	}
 }
