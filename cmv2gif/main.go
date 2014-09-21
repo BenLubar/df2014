@@ -44,13 +44,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	tileset, err := NewTilesetFromFile(*flagTileset)
-	if err != nil {
-		log.Fatal(err)
-	}
+	tilesetch := make(chan *Tileset)
+	go func() {
+		tileset, err := NewTilesetFromFile(*flagTileset)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	var movie df2014.CMV
-	{
+		log.Println("loaded tileset", *flagTileset)
+		tilesetch <- tileset
+	}()
+
+	moviech := make(chan *df2014.CMV)
+	go func() {
+		var movie df2014.CMV
 		f, err := os.Open(*flagInput)
 		if err != nil {
 			log.Fatal(err)
@@ -61,9 +68,19 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		log.Println("loaded cmv", *flagInput)
+		moviech <- &movie
+	}()
+
+	tileset, movie := <-tilesetch, <-moviech
+
+	delay := int(float64(movie.Header.FrameTime) / float64(10*time.Millisecond) / *flagSpeed)
+	if delay == 0 {
+		delay = int(2 / *flagSpeed)
 	}
 
-	delay := int(float64(movie.Header.FrameTime/(time.Second/10)) / *flagSpeed)
+	log.Println("time per frame:", time.Duration(delay)*10*time.Millisecond)
 
 	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
@@ -72,18 +89,27 @@ func main() {
 	frames := make(chan *image.Paletted, *flagBuffer)
 
 	go func() {
-		for _, frame := range movie.Frames {
+		var lastLog time.Time
+
+		for i, frame := range movie.Frames {
 			img := image.NewPaletted(frameSize, Palette)
 
 			for x, col := range frame.Attributes {
 				for y, attr := range col {
-					rect := tileSize.Add(image.Point{tileset.size.X * x, tileset.size.Y * y})
+					rect := tileSize.Add(image.Pt(tileset.size.X*x, tileset.size.Y*y))
 					tile := tileset.Tile(frame.Characters[x][y], attr)
 					fastDraw(img, rect, tile, tile.Bounds().Min)
 				}
 			}
 			frames <- img
+
+			if time.Since(lastLog) >= time.Second {
+				lastLog = time.Now()
+				log.Println("encoding frames...", i+1, "/", len(movie.Frames))
+			}
 		}
+
+		log.Println("finished encoding frames")
 
 		close(frames)
 	}()
@@ -156,7 +182,7 @@ func NewTileset(r io.Reader) (*Tileset, error) {
 
 	var t Tileset
 
-	t.size = image.Point{img.Bounds().Dx() / 16, img.Bounds().Dy() / 16}
+	t.size = image.Pt(img.Bounds().Dx()/16, img.Bounds().Dy()/16)
 	t.tile = image.Rectangle{image.ZP, t.size}.Add(img.Bounds().Min)
 
 	mask := image.NewAlpha16(img.Bounds())
@@ -188,7 +214,7 @@ func NewTileset(r io.Reader) (*Tileset, error) {
 }
 
 func (t *Tileset) Tile(char df2014.CMVCharacter, attr df2014.CMVAttribute) *image.Paletted {
-	return t.set[attr].SubImage(t.tile.Add(image.Point{t.size.X * int(char.Byte()&0xf), t.size.Y * int(char.Byte()>>4)})).(*image.Paletted)
+	return t.set[attr].SubImage(t.tile.Add(image.Pt(t.size.X*int(char.Byte()&0xf), t.size.Y*int(char.Byte()>>4)))).(*image.Paletted)
 }
 
 type TileColor struct {
