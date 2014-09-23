@@ -55,21 +55,20 @@ func main() {
 		tilesetch <- tileset
 	}()
 
-	moviech := make(chan *df2014.CMV)
+	moviech := make(chan *df2014.CMVStream)
 	go func() {
-		var movie df2014.CMV
 		f, err := os.Open(*flagInput)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
+		// f gets closed by StreamCMV
 
-		err = (&df2014.Reader{f}).Decode(&movie)
+		movie, err := df2014.StreamCMV(f, *flagBuffer)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Println("loaded cmv", *flagInput)
+		log.Println("opened cmv", *flagInput)
 		moviech <- &movie
 	}()
 
@@ -80,7 +79,13 @@ func main() {
 		delay = int(2 / *flagSpeed)
 	}
 
-	log.Println("time per frame:", time.Duration(delay)*10*time.Millisecond)
+	if delay <= 0 {
+		delay = 1
+	}
+
+	frameDuration := time.Duration(delay) * 10 * time.Millisecond
+
+	log.Println("time per frame:", frameDuration)
 
 	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
 	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
@@ -91,7 +96,11 @@ func main() {
 	go func() {
 		var lastLog time.Time
 
-		for i, frame := range movie.Frames {
+		i := 0
+
+		for frame := range movie.Frames {
+			i++
+
 			img := image.NewPaletted(frameSize, Palette)
 
 			for x, col := range frame.Attributes {
@@ -105,11 +114,11 @@ func main() {
 
 			if time.Since(lastLog) >= time.Second {
 				lastLog = time.Now()
-				log.Println("encoding frames...", i+1, "/", len(movie.Frames))
+				log.Println("encoding frames...", i, "encoded,", time.Duration(i)*frameDuration)
 			}
 		}
 
-		log.Println("finished encoding frames")
+		log.Println("finished encoding", i, "frames,", time.Duration(i)*frameDuration)
 
 		close(frames)
 	}()
