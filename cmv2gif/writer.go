@@ -111,6 +111,12 @@ func (e *encoder) writeHeader(pm *image.Paletted) {
 	if e.err != nil {
 		return
 	}
+
+	if len(pm.Palette) == 0 {
+		e.err = errors.New("gif: cannot encode image with empty palette")
+		return
+	}
+
 	_, e.err = io.WriteString(e.w, "GIF89a")
 	if e.err != nil {
 		return
@@ -122,12 +128,13 @@ func (e *encoder) writeHeader(pm *image.Paletted) {
 	writeUint16(e.buf[2:4], uint16(pm.Bounds().Dy()))
 	e.write(e.buf[:4])
 
-	// All frames have a local color table, so a global color table
-	// is not needed.
-	e.buf[0] = 0x00
+	paddedSize := log2(len(pm.Palette)) // Size of Local Color Table: 2^(1+n).
+	e.buf[0] = 0x80 | uint8(paddedSize)
 	e.buf[1] = 0x00 // Background Color Index.
 	e.buf[2] = 0x00 // Pixel Aspect Ratio.
 	e.write(e.buf[:3])
+
+	e.writeColorTable(pm.Palette, paddedSize)
 
 	// Always add animation info.
 	//if len(e.g.Image) > 1 {
@@ -174,45 +181,22 @@ func (e *encoder) writeImageBlock(pm *image.Paletted, delay int) {
 		return
 	}
 
-	if len(pm.Palette) == 0 {
-		e.err = errors.New("gif: cannot encode image block with empty palette")
-		return
-	}
-
 	b := pm.Bounds()
 	if b.Dx() >= 1<<16 || b.Dy() >= 1<<16 || b.Min.X < 0 || b.Min.X >= 1<<16 || b.Min.Y < 0 || b.Min.Y >= 1<<16 {
 		e.err = errors.New("gif: image block is too large to encode")
 		return
 	}
 
-	transparentIndex := -1
-	for i, c := range pm.Palette {
-		if _, _, _, a := c.RGBA(); a == 0 {
-			transparentIndex = i
-			break
-		}
-	}
+	e.buf[0] = sExtension                  // Extension Introducer.
+	e.buf[1] = gcLabel                     // Graphic Control Label.
+	e.buf[2] = gcBlockSize                 // Block Size.
+	e.buf[3] = 0x00                        // No Transparency.
+	writeUint16(e.buf[4:6], uint16(delay)) // Delay Time (1/100ths of a second)
 
-	if delay > 0 || transparentIndex != -1 {
-		e.buf[0] = sExtension  // Extension Introducer.
-		e.buf[1] = gcLabel     // Graphic Control Label.
-		e.buf[2] = gcBlockSize // Block Size.
-		if transparentIndex != -1 {
-			e.buf[3] = 0x01
-		} else {
-			e.buf[3] = 0x00
-		}
-		writeUint16(e.buf[4:6], uint16(delay)) // Delay Time (1/100ths of a second)
+	e.buf[6] = 0x00 // Transparent color index.
+	e.buf[7] = 0x00 // Block Terminator.
+	e.write(e.buf[:8])
 
-		// Transparent color index.
-		if transparentIndex != -1 {
-			e.buf[6] = uint8(transparentIndex)
-		} else {
-			e.buf[6] = 0x00
-		}
-		e.buf[7] = 0x00 // Block Terminator.
-		e.write(e.buf[:8])
-	}
 	e.buf[0] = sImageDescriptor
 	writeUint16(e.buf[1:3], uint16(b.Min.X))
 	writeUint16(e.buf[3:5], uint16(b.Min.Y))
@@ -222,10 +206,7 @@ func (e *encoder) writeImageBlock(pm *image.Paletted, delay int) {
 
 	paddedSize := log2(len(pm.Palette)) // Size of Local Color Table: 2^(1+n).
 	// Interlacing is not supported.
-	e.writeByte(0x80 | uint8(paddedSize))
-
-	// Local Color Table.
-	e.writeColorTable(pm.Palette, paddedSize)
+	e.writeByte(0x00)
 
 	litWidth := paddedSize + 1
 	if litWidth < 2 {
