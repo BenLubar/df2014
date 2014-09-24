@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"flag"
@@ -127,7 +128,14 @@ func main() {
 	}
 	defer f.Close()
 
-	err = EncodeAll(f, frames, delay)
+	w := bufio.NewWriter(f)
+
+	err = EncodeAll(w, frames, delay)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = w.Flush()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,6 +1,7 @@
 package df2014
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -176,7 +177,7 @@ func (r *Reader) cmv() (cmv CMV, err error) {
 }
 
 func StreamCMV(in io.ReadCloser, buffer int) (cmv CMVStream, err error) {
-	r := &Reader{in}
+	r := &Reader{bufio.NewReader(in)}
 
 	err = binary.Read(r, binary.LittleEndian, &cmv.Header.Version)
 	if err != nil {
