@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"container/heap"
 	"errors"
 	"flag"
 	"github.com/BenLubar/df2014"
@@ -13,6 +14,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
+	"sync"
 	"time"
 )
 
@@ -66,41 +69,9 @@ func main() {
 
 	log.Println("time per frame:", frameDuration)
 
-	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
-	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
-	tileSize := image.Rect(0, 0, tileset.size.X, tileset.size.Y)
-
 	frames := make(chan *image.YCbCr, *flagBuffer)
 
-	go func() {
-		var lastLog time.Time
-
-		i := 0
-
-		for frame := range movie.Frames {
-			i++
-
-			img := image.NewYCbCr(frameSize, image.YCbCrSubsampleRatio444)
-
-			for x, col := range frame.Attributes {
-				for y, attr := range col {
-					rect := tileSize.Add(image.Pt(tileset.size.X*x, tileset.size.Y*y))
-					tile := tileset.Tile(frame.Characters[x][y], attr)
-					draw.Draw(YCbCr{img}, rect, tile, tile.Bounds().Min, draw.Src)
-				}
-			}
-			frames <- img
-
-			if time.Since(lastLog) >= time.Second {
-				lastLog = time.Now()
-				log.Println("encoding frames...", i, "encoded,", time.Duration(i)*frameDuration)
-			}
-		}
-
-		log.Println("finished encoding", i, "frames,", time.Duration(i)*frameDuration)
-
-		close(frames)
-	}()
+	go Multiplex(movie, frames, tileset, frameDuration)
 
 	w := bufio.NewWriter(os.Stdout)
 
@@ -230,4 +201,154 @@ func (c TileColor) RGBA() (r, g, b, a uint32) {
 	a = (a0*a1/0xffff + a2*a3/0xffff)
 
 	return
+}
+
+func fastDraw(dst *image.YCbCr, r image.Rectangle, src *image.YCbCr, sp image.Point) {
+	yoff0, ystride0 := dst.YOffset(r.Min.X, r.Min.Y), dst.YStride
+	coff0, cstride0 := dst.COffset(r.Min.X, r.Min.Y), dst.CStride
+	y0, cb0, cr0 := dst.Y[yoff0:], dst.Cb[coff0:], dst.Cr[coff0:]
+
+	yoff1, ystride1 := src.YOffset(sp.X, sp.Y), src.YStride
+	coff1, cstride1 := src.COffset(sp.X, sp.Y), src.CStride
+	y1, cb1, cr1 := src.Y[yoff1:], src.Cb[coff1:], src.Cr[coff1:]
+
+	dx, dy := r.Dx(), r.Dy()
+	for y := 0; y < dy; y++ {
+		copy(y0[ystride0*y:ystride0*y+dx], y1[ystride1*y:ystride1*y+dx])
+		copy(cb0[cstride0*y:cstride0*y+dx], cb1[cstride1*y:cstride1*y+dx])
+		copy(cr0[cstride0*y:cstride0*y+dx], cr1[cstride1*y:cstride1*y+dx])
+	}
+}
+
+func Multiplex(movie *df2014.CMVStream, completed chan<- *image.YCbCr, tileset *Tileset, frameDuration time.Duration) {
+	input, output := make(chan *job, *flagBuffer), make(chan *job, *flagBuffer)
+
+	procs := runtime.GOMAXPROCS(0)
+	var wg sync.WaitGroup
+
+	wg.Add(procs)
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+
+	jobs := new(jobHeap)
+	heap.Init(jobs)
+
+	limiter := make(chan struct{}, procs+*flagBuffer)
+	go JobCreator(movie.Frames, input, limiter)
+
+	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
+	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
+	tileSize := image.Rect(0, 0, tileset.size.X, tileset.size.Y)
+
+	for i := 0; i < procs; i++ {
+		go Worker(tileset, input, output, &wg, frameSize, tileSize)
+	}
+
+	var lastLog time.Time
+	seq, done := 0, false
+	var img *image.YCbCr
+	for !done || jobs.Len() > 0 {
+		var (
+			ready <-chan *job
+			send  chan<- *image.YCbCr
+		)
+
+		if !done {
+			ready = output
+		}
+		if img != nil {
+			send = completed
+		}
+
+		select {
+		case j, ok := <-ready:
+			if ok {
+				heap.Push(jobs, j)
+			} else {
+				done = true
+			}
+
+		case send <- img:
+			<-limiter
+			seq++
+			img = nil
+
+			if time.Since(lastLog) >= time.Second {
+				lastLog = time.Now()
+				log.Println("encoding frames...", seq, "encoded,", time.Duration(seq)*frameDuration)
+			}
+		}
+
+		if img == nil && jobs.Len() > 0 && (*jobs)[0].seq == seq {
+			img = heap.Pop(jobs).(*job).out
+		}
+	}
+	log.Println("finished encoding", seq, "frames,", time.Duration(seq)*frameDuration)
+	close(completed)
+}
+
+func JobCreator(frames <-chan df2014.CMVFrame, input chan<- *job, limiter chan struct{}) {
+	i := 0
+
+	for frame := range frames {
+		limiter <- struct{}{}
+		input <- &job{
+			seq: i,
+			in:  frame,
+		}
+
+		i++
+	}
+	close(input)
+}
+
+func Worker(tileset *Tileset, input <-chan *job, output chan<- *job, wg *sync.WaitGroup, frameSize, tileSize image.Rectangle) {
+	for j := range input {
+		j.out = image.NewYCbCr(frameSize, image.YCbCrSubsampleRatio444)
+
+		for x, col := range j.in.Attributes {
+			for y, attr := range col {
+				rect := tileSize.Add(image.Pt(tileset.size.X*x, tileset.size.Y*y))
+				tile := tileset.Tile(j.in.Characters[x][y], attr)
+				fastDraw(j.out, rect, tile, tile.Bounds().Min)
+			}
+		}
+
+		output <- j
+	}
+
+	wg.Done()
+}
+
+type job struct {
+	seq int
+	in  df2014.CMVFrame
+	out *image.YCbCr
+}
+
+type jobHeap []*job
+
+func (h *jobHeap) Len() int {
+	return len(*h)
+}
+
+func (h *jobHeap) Less(i, j int) bool {
+	return (*h)[i].seq < (*h)[j].seq
+}
+
+func (h *jobHeap) Swap(i, j int) {
+	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
+}
+
+func (h *jobHeap) Push(x interface{}) {
+	*h = append(*h, x.(*job))
+}
+
+func (h *jobHeap) Pop() interface{} {
+	l := len(*h)
+	j := (*h)[l-1]
+	*h = (*h)[:l-1]
+	return j
 }
