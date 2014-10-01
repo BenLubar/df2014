@@ -28,12 +28,28 @@ var (
 func main() {
 	flag.Parse()
 
-	switch len(flag.Args()) {
+	moviech := make(chan *df2014.CMVStream)
+	switch flag.NArg() {
 	case 0:
-		// do nothing
+		go func() {
+			movie, err := df2014.StreamCMV(os.Stdin, *flagBuffer)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Println("opened cmv")
+			moviech <- &movie
+		}()
 	default:
-		flag.PrintDefaults()
-		os.Exit(1)
+		go func() {
+			movie, err := CombineCMV(flag.Args()...)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Println("opened cmv")
+			moviech <- &movie
+		}()
 	}
 
 	tilesetch := make(chan *Tileset)
@@ -45,17 +61,6 @@ func main() {
 
 		log.Println("loaded tileset", *flagTileset)
 		tilesetch <- tileset
-	}()
-
-	moviech := make(chan *df2014.CMVStream)
-	go func() {
-		movie, err := df2014.StreamCMV(os.Stdin, *flagBuffer)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Println("opened cmv")
-		moviech <- &movie
 	}()
 
 	tileset, movie := <-tilesetch, <-moviech
@@ -351,4 +356,47 @@ func (h *jobHeap) Pop() interface{} {
 	j := (*h)[l-1]
 	*h = (*h)[:l-1]
 	return j
+}
+
+var ErrHeaderMismatch = errors.New("CMV file headers differ in dimensions, timing, or version")
+
+func CombineCMV(names ...string) (cmv df2014.CMVStream, err error) {
+	movies := make([]df2014.CMVStream, len(names))
+	for i, fn := range names {
+		var f *os.File
+		f, err = os.Open(fn)
+		if err != nil {
+			return
+		}
+
+		// f is closed by StreamCMV
+		movies[i], err = df2014.StreamCMV(f, *flagBuffer)
+		if err != nil {
+			return
+		}
+	}
+
+	cmv.Header = movies[0].Header
+
+	for _, m := range movies[1:] {
+		if m.Header != cmv.Header {
+			err = ErrHeaderMismatch
+			return
+		}
+	}
+
+	frames := make(chan df2014.CMVFrame, *flagBuffer)
+
+	cmv.Frames = frames
+
+	go func() {
+		defer close(frames)
+		for _, m := range movies {
+			for f := range m.Frames {
+				frames <- f
+			}
+		}
+	}()
+
+	return
 }
