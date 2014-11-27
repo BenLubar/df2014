@@ -84,7 +84,7 @@ var builtinMaterials = [...]string{
 }
 
 func (i BuiltinIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), builtinMaterials[:], buf)
+	return prettyPrintIndex(int64(i), uint64(i), builtinMaterials[:], buf)
 }
 
 type MaterialBuiltin struct {
@@ -429,7 +429,7 @@ var itemTypes = [...]string{
 }
 
 func (i ItemType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), itemTypes[:], buf)
+	return prettyPrintIndex(int64(i), uint64(i), itemTypes[:], buf)
 }
 
 type PlantGrowthList struct {

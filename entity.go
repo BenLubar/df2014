@@ -46,7 +46,7 @@ func (i EntityType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 type EntityCreatureIndex uint16
 
 func (i EntityCreatureIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), w.StringTables.Creature, buf)
+	return prettyPrintIndex(int64(i), uint64(i), w.StringTables.Creature, buf)
 }
 
 type RaceCasteList struct {
@@ -124,7 +124,7 @@ var entityEthicResponses = [...]string{
 }
 
 func (i EntityEthicResponse) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), entityEthicResponses[:], buf)
+	return prettyPrintIndex(int64(i), uint64(i), entityEthicResponses[:], buf)
 }
 
 type Entity struct {

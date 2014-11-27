@@ -27,7 +27,7 @@ var nameForms = [...]string{
 }
 
 func (i NameForm) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), nameForms[:], buf)
+	return prettyPrintIndex(int64(i), uint64(i), nameForms[:], buf)
 }
 
 type Name struct {

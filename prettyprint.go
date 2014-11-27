@@ -49,7 +49,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		buf = strconv.AppendInt(buf, v.Int(), 10)
 		buf = append(buf, " (0x"...)
-		buf = strconv.AppendUint(buf, uint64(v.Int()), 16)
+		buf = strconv.AppendUint(buf, uint64(v.Int())&(1<<uint(v.Type().Bits())-1), 16)
 		buf = append(buf, ')')
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:

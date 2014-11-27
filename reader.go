@@ -359,8 +359,85 @@ func (r *Reader) string() (string, error) {
 	return string(s), nil
 }
 
+type SaveVersion uint32
+
+var saveVersions = map[SaveVersion]string{
+	1287: "0.31.01",
+	1288: "0.31.02",
+	1289: "0.31.03",
+	1292: "0.31.04",
+	1295: "0.31.05",
+	1297: "0.31.06",
+	1300: "0.31.08",
+	1304: "0.31.09",
+	1305: "0.31.10",
+	1310: "0.31.11",
+	1311: "0.31.12",
+	1323: "0.31.13",
+	1325: "0.31.14",
+	1326: "0.31.15",
+	1327: "0.31.16",
+	1340: "0.31.17",
+	1341: "0.31.18",
+	1351: "0.31.19",
+	1353: "0.31.20",
+	1354: "0.31.21",
+	1359: "0.31.22",
+	1360: "0.31.23",
+	1361: "0.31.24",
+	1362: "0.31.25",
+
+	1372: "0.34.01",
+	1374: "0.34.02",
+	1376: "0.34.03",
+	1377: "0.34.04",
+	1378: "0.34.05",
+	1382: "0.34.06",
+	1383: "0.34.07",
+	1400: "0.34.08",
+	1402: "0.34.09",
+	1403: "0.34.10",
+	1404: "0.34.11",
+
+	1441: "0.40.01",
+	1442: "0.40.02",
+	1443: "0.40.03",
+	1444: "0.40.04",
+	1445: "0.40.05",
+	1446: "0.40.06",
+	1448: "0.40.07",
+	1449: "0.40.08",
+	1451: "0.40.09",
+	1452: "0.40.10",
+	1456: "0.40.11",
+	1459: "0.40.12",
+	1462: "0.40.13",
+	1469: "0.40.14",
+	1470: "0.40.15",
+	1471: "0.40.16",
+	1472: "0.40.17",
+	1473: "0.40.18",
+}
+
+type CompressionType uint32
+
+const (
+	Uncompressed CompressionType = iota
+	ZLib
+)
+
+var compressionTypeNames = []string{
+	Uncompressed: "Uncompressed",
+	ZLib:         "ZLib",
+}
+
+func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	return prettyPrintIndex(int64(i), uint64(i), compressionTypeNames, buf)
+}
+
 type Header struct {
-	Version, Compression uint32
+	Version     uint32
+	Compression CompressionType
 }
 
 func (r *Reader) header() (h Header, err error) {
@@ -380,9 +457,9 @@ func (r *Reader) header() (h Header, err error) {
 	}
 
 	switch h.Compression {
-	case 0:
+	case Uncompressed:
 		// nothing to be done
-	case 1:
+	case ZLib:
 		r.Reader = &compression1Reader{r: r.Reader}
 	default:
 		err = fmt.Errorf("df2014: unhandled compression type %d", h.Compression)
