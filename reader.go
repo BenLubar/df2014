@@ -548,7 +548,7 @@ func (r *Reader) header() (h Header, err error) {
 		if err != nil {
 			panic(err)
 		}
-		if h.Version < 10000 {
+		if h.Version < 10000 && h.Compression&0xffff == 0xda78 {
 			// guess 40d compression
 			r.Reader = &compression1Reader{r: io.MultiReader(&undo, r.Reader)}
 			h.Compression = Special40d
