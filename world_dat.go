@@ -3,7 +3,7 @@ package df2014
 type WorldDat struct {
 	Header
 
-	Unk000         uint16 `df2014_assert_equals:"0x0"`
+	Unk000         uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
 	Unk001         int32  `df2014_assert_gte:"-1"`
 	Unk002         int32  `df2014_assert_gte:"-1" df2014_assert_same_as:"Unk001"`
 	Unk003         int32  `df2014_assert_gte:"-1"`

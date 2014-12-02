@@ -341,7 +341,7 @@ func (r *Reader) book() (book Book, err error) {
 		}
 	}
 
-	err = r.Decode(&book.Unk009)
+	book.Unk009, err = r.string()
 	if err != nil {
 		return
 	}

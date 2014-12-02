@@ -37,6 +37,26 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 		indent = append(indent, '\t')
 
 		for i, l := 0, v.NumField(); i < l; i++ {
+			if tag := v.Type().Field(i).Tag.Get("df2014_version_min"); tag != "" {
+				expected, err := strconv.ParseUint(tag, 0, 32)
+				if err != nil {
+					panic(err)
+				}
+
+				if w.Version < SaveVersion(expected) {
+					continue
+				}
+			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_version_max"); tag != "" {
+				expected, err := strconv.ParseUint(tag, 0, 32)
+				if err != nil {
+					panic(err)
+				}
+
+				if w.Version > SaveVersion(expected) {
+					continue
+				}
+			}
 			buf = append(buf, indent...)
 			buf = append(buf, v.Type().Field(i).Name...)
 			buf = append(buf, ": "...)

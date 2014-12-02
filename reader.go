@@ -23,11 +23,15 @@ type Reader struct {
 	io.Reader
 }
 
-func (r *Reader) Decode(v interface{}) error {
-	return r.DecodeValue(reflect.ValueOf(v).Elem())
+func (r *Reader) DecodeSimple(v interface{}) error {
+	return r.DecodeValue(nil, reflect.ValueOf(v).Elem())
 }
 
-func (r *Reader) DecodeValue(v reflect.Value) (err error) {
+func (r *Reader) Decode(v *WorldDat) error {
+	return r.DecodeValue(v, reflect.ValueOf(v).Elem())
+}
+
+func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 	switch v.Kind() {
 	case reflect.Struct:
 		if _, ok := v.Interface().(Header); ok {
@@ -55,19 +59,39 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 			return nil
 		}
 		for i := 0; i < v.NumField(); i++ {
+			if tag := v.Type().Field(i).Tag.Get("df2014_version_min"); tag != "" {
+				expected, err := strconv.ParseUint(tag, 0, 32)
+				if err != nil {
+					return err
+				}
+
+				if world.Version < SaveVersion(expected) {
+					continue
+				}
+			}
+			if tag := v.Type().Field(i).Tag.Get("df2014_version_max"); tag != "" {
+				expected, err := strconv.ParseUint(tag, 0, 32)
+				if err != nil {
+					return err
+				}
+
+				if world.Version > SaveVersion(expected) {
+					continue
+				}
+			}
 			if tag := v.Type().Field(i).Tag.Get("df2014_get_length_from"); tag != "" {
 				l := v.FieldByName(tag).Len()
 				v.Field(i).Set(reflect.MakeSlice(v.Type().Field(i).Type, l, l))
 
 				for j := 0; j < l; j++ {
-					err := r.DecodeValue(v.Field(i).Index(j))
+					err := r.DecodeValue(world, v.Field(i).Index(j))
 					if err != nil {
 						v.Field(i).SetLen(j + 1) // hide the entries that we didn't get to
 						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), err}}
 					}
 				}
 			} else {
-				err := r.DecodeValue(v.Field(i))
+				err := r.DecodeValue(world, v.Field(i))
 				if err != nil {
 					return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), err}
 				}
@@ -185,7 +209,7 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 		}
 		if flag {
 			v.Set(reflect.New(v.Type().Elem()))
-			return r.DecodeValue(v.Elem())
+			return r.DecodeValue(world, v.Elem())
 		} else {
 			v.Set(reflect.Zero(v.Type()))
 			return nil
@@ -214,7 +238,7 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 		fallthrough
 	case reflect.Array:
 		for i, l := 0, v.Len(); i < l; i++ {
-			err := r.DecodeValue(v.Index(i))
+			err := r.DecodeValue(world, v.Index(i))
 			if err != nil {
 				return NestedError{fmt.Sprintf("at index %d", i), err}
 			}
@@ -277,7 +301,7 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 			for i := int32(0); i < length; i++ {
 				key := reflect.New(v.Type().Key()).Elem()
 
-				r.DecodeValue(key)
+				r.DecodeValue(world, key)
 				if err != nil {
 					return err
 				}
@@ -295,11 +319,11 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 				key := reflect.New(v.Type().Key()).Elem()
 				val := reflect.New(v.Type().Elem()).Elem()
 
-				err = r.DecodeValue(key)
+				err = r.DecodeValue(world, key)
 				if err != nil {
 					return err
 				}
-				err = r.DecodeValue(val)
+				err = r.DecodeValue(world, val)
 				if err != nil {
 					return err
 				}
@@ -319,7 +343,7 @@ func (r *Reader) DecodeValue(v reflect.Value) (err error) {
 
 func (r *Reader) bool() (b bool, err error) {
 	var n uint8
-	err = r.Decode(&n)
+	err = binary.Read(r, binary.LittleEndian, &n)
 	if err == nil {
 		switch n {
 		case 0:
@@ -362,6 +386,52 @@ func (r *Reader) string() (string, error) {
 type SaveVersion uint32
 
 var saveVersions = map[SaveVersion]string{
+	1107: "0.21.93.19a",
+	1108: "0.21.93.19c",
+	// => "0.21.95.19a",
+	// => "0.21.95.19b",
+	1110: "0.21.95.19c",
+	// => "0.21.100.19a",
+	1113: "0.21.101.19a",
+	1114: "0.21.101.19d",
+	1117: "0.21.102.19a",
+	1119: "0.21.104.19b",
+	1121: "0.21.104.19d",
+	1123: "0.21.104.21a",
+	1125: "0.21.104.21b",
+	1128: "0.21.105.21a",
+	// => "0.22.107.21a",
+	1134: "0.22.110.22e",
+	1137: "0.22.110.22f",
+	1148: "0.22.110.23a",
+	1151: "0.22.120.23a",
+	1161: "0.22.121.23b",
+	1165: "0.22.123.23a",
+	1169: "0.23.130.23a",
+
+	1205: "0.27.169.32a",
+	1206: "0.27.169.33a",
+	1209: "0.27.169.33b",
+	1211: "0.27.169.33c",
+	1212: "0.27.169.33d",
+	1213: "0.27.169.33e",
+	1215: "0.27.169.33f",
+	1216: "0.27.169.33g",
+	1223: "0.27.173.38a",
+	1231: "0.27.176.38a",
+	1234: "0.27.176.38b",
+	1235: "0.27.176.38c",
+	1254: "0.28.181.39a",
+	1255: "0.28.181.39b",
+	1256: "0.28.181.39c",
+	1259: "0.28.181.39d",
+	1260: "0.28.181.39e",
+	1261: "0.28.181.39f",
+	1265: "0.28.181.40a",
+	1266: "0.28.181.40b",
+	1267: "0.28.181.40c",
+	1268: "0.28.181.40d",
+
 	1287: "0.31.01",
 	1288: "0.31.02",
 	1289: "0.31.03",
@@ -417,6 +487,22 @@ var saveVersions = map[SaveVersion]string{
 	1471: "0.40.16",
 	1472: "0.40.17",
 	1473: "0.40.18",
+	1474: "0.40.19",
+}
+
+func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+	buf = strconv.AppendInt(buf, int64(i), 10)
+	buf = append(buf, " (0x"...)
+	buf = strconv.AppendUint(buf, uint64(i), 16)
+	buf = append(buf, ')')
+
+	if v, ok := saveVersions[i]; ok {
+		buf = append(buf, " ("...)
+		buf = append(buf, v...)
+		buf = append(buf, ')')
+	}
+
+	return buf
 }
 
 type CompressionType uint32
@@ -424,11 +510,16 @@ type CompressionType uint32
 const (
 	Uncompressed CompressionType = iota
 	ZLib
+	// the rest aren't used in files
+	Special23a
+	Special40d
 )
 
 var compressionTypeNames = []string{
 	Uncompressed: "Uncompressed",
 	ZLib:         "ZLib",
+	Special23a:   "special: 23a",
+	Special40d:   "special: 40d",
 }
 
 func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
@@ -436,22 +527,12 @@ func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 }
 
 type Header struct {
-	Version     uint32
+	Version     SaveVersion
 	Compression CompressionType
 }
 
 func (r *Reader) header() (h Header, err error) {
-	err = binary.Read(r, binary.LittleEndian, &h.Version)
-	if err != nil {
-		return
-	}
-
-	if h.Version != 1473 {
-		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
-		return
-	}
-
-	err = binary.Read(r, binary.LittleEndian, &h.Compression)
+	err = binary.Read(r, binary.LittleEndian, &h)
 	if err != nil {
 		return
 	}
@@ -462,7 +543,28 @@ func (r *Reader) header() (h Header, err error) {
 	case ZLib:
 		r.Reader = &compression1Reader{r: r.Reader}
 	default:
-		err = fmt.Errorf("df2014: unhandled compression type %d", h.Compression)
+		var undo bytes.Buffer
+		err = binary.Write(&undo, binary.LittleEndian, &h)
+		if err != nil {
+			panic(err)
+		}
+		if h.Version < 10000 {
+			// guess 40d compression
+			r.Reader = &compression1Reader{r: io.MultiReader(&undo, r.Reader)}
+			h.Compression = Special40d
+		} else {
+			// guess 23a compression
+			r.Reader = &wtf23aReader{r: io.MultiReader(&undo, r.Reader)}
+			h.Compression = Special23a
+		}
+		err = binary.Read(r, binary.LittleEndian, &h.Version)
+		if err != nil {
+			return
+		}
+	}
+
+	if _, ok := saveVersions[h.Version]; !ok {
+		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
 		return
 	}
 

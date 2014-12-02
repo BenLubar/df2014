@@ -118,7 +118,7 @@ func (r *Reader) cmv() (cmv CMV, err error) {
 		cmv.Sounds = new(CMVSounds)
 
 		var soundsRaw [][50]byte
-		err = r.Decode(&soundsRaw)
+		err = r.DecodeSimple(&soundsRaw)
 		if err != nil {
 			return
 		}
@@ -127,7 +127,7 @@ func (r *Reader) cmv() (cmv CMV, err error) {
 			cmv.Sounds.Files = append(cmv.Sounds.Files, string(sound[:bytes.IndexByte(sound[:], 0)]))
 		}
 
-		err = r.Decode(&cmv.Sounds.Timing)
+		err = r.DecodeSimple(&cmv.Sounds.Timing)
 		if err != nil {
 			return
 		}
@@ -217,7 +217,7 @@ func StreamCMV(in io.ReadCloser, buffer int) (cmv CMVStream, err error) {
 		cmv.Sounds = new(CMVSounds)
 
 		var soundsRaw [][50]byte
-		err = r.Decode(&soundsRaw)
+		err = r.DecodeSimple(&soundsRaw)
 		if err != nil {
 			in.Close()
 			return
@@ -227,7 +227,7 @@ func StreamCMV(in io.ReadCloser, buffer int) (cmv CMVStream, err error) {
 			cmv.Sounds.Files = append(cmv.Sounds.Files, string(sound[:bytes.IndexByte(sound[:], 0)]))
 		}
 
-		err = r.Decode(&cmv.Sounds.Timing)
+		err = r.DecodeSimple(&cmv.Sounds.Timing)
 		if err != nil {
 			in.Close()
 			return
