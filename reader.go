@@ -563,6 +563,21 @@ func (r *Reader) header() (h Header, err error) {
 		}
 	}
 
+	if h.Version == 0 && h.Compression == 0 {
+		// guess 23a compression with modded-out encryption
+		var undo bytes.Buffer
+		err = binary.Write(&undo, binary.LittleEndian, &h)
+		if err != nil {
+			panic(err)
+		}
+		r.Reader = &wtf23aReader{r: io.MultiReader(&undo, r.Reader)}
+		h.Compression = Special23a
+		err = binary.Read(r, binary.LittleEndian, &h.Version)
+		if err != nil {
+			return
+		}
+	}
+
 	if _, ok := saveVersions[h.Version]; !ok {
 		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
 		return
