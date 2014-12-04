@@ -7,10 +7,10 @@ import (
 )
 
 type prettyPrinter interface {
-	prettyPrint(w *WorldDat, buf, indent []byte) []byte
+	prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte
 }
 
-func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
+func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	bufPreType := buf
 	buf = append(buf, v.Kind().String()...)
 	buf = append(buf, ' ')
@@ -20,7 +20,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 	}
 
 	if p, ok := v.Interface().(prettyPrinter); ok {
-		return p.prettyPrint(w, buf, indent)
+		return p.prettyPrint(w, buf, indent, outerTag)
 	}
 
 	switch v.Kind() {
@@ -29,7 +29,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 			buf = append(buf, "(nil)"...)
 		} else {
 			buf = append(bufPreType, '&')
-			buf = prettyPrint(w, v.Elem(), buf, indent)
+			buf = prettyPrint(w, v.Elem(), buf, indent, outerTag)
 		}
 
 	case reflect.Struct:
@@ -37,7 +37,8 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 		indent = append(indent, '\t')
 
 		for i, l := 0, v.NumField(); i < l; i++ {
-			if tag := v.Type().Field(i).Tag.Get("df2014_version_min"); tag != "" {
+			fieldTag := v.Type().Field(i).Tag
+			if tag := fieldTag.Get("df2014_version_min"); tag != "" {
 				expected, err := strconv.ParseUint(tag, 0, 32)
 				if err != nil {
 					panic(err)
@@ -47,7 +48,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 					continue
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_version_max"); tag != "" {
+			if tag := fieldTag.Get("df2014_version_max"); tag != "" {
 				expected, err := strconv.ParseUint(tag, 0, 32)
 				if err != nil {
 					panic(err)
@@ -60,7 +61,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 			buf = append(buf, indent...)
 			buf = append(buf, v.Type().Field(i).Name...)
 			buf = append(buf, ": "...)
-			buf = prettyPrint(w, v.Field(i), buf, indent)
+			buf = prettyPrint(w, v.Field(i), buf, indent, fieldTag)
 		}
 
 		buf = append(buf, indent[:len(indent)-1]...)
@@ -97,11 +98,20 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 		}
 		indent = append(indent, '\t')
 
+		var names []string
+		if tag := outerTag.Get("df2014_key_is_string"); tag != "" {
+			names = reflect.ValueOf(w.StringTables).FieldByName(tag).Interface().([]string)
+		}
 		for i, l := 0, v.Len(); i < l; i++ {
 			buf = append(buf, indent...)
 			buf = strconv.AppendInt(buf, int64(i), 10)
+			if i >= 0 && int(i) < len(names) {
+				buf = append(buf, " ("...)
+				buf = append(buf, names[i]...)
+				buf = append(buf, ')')
+			}
 			buf = append(buf, ": "...)
-			buf = prettyPrint(w, v.Index(i), buf, indent)
+			buf = prettyPrint(w, v.Index(i), buf, indent, "")
 		}
 
 		buf = append(buf, indent[:len(indent)-1]...)
@@ -123,9 +133,9 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte) []byte {
 
 		for _, e := range elements {
 			buf = append(buf, indent...)
-			buf = prettyPrint(w, e.key, buf, indent)
+			buf = prettyPrint(w, e.key, buf, indent, "")
 			buf = append(buf, ": "...)
-			buf = prettyPrint(w, e.value, buf, indent)
+			buf = prettyPrint(w, e.value, buf, indent, "")
 		}
 
 		buf = append(buf, indent[:len(indent)-1]...)

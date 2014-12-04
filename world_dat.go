@@ -3,70 +3,93 @@ package df2014
 type WorldDat struct {
 	Header
 
-	Unk000         uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
-	Unk001         int32  `df2014_assert_gte:"-1"`
-	Unk002         int32  `df2014_assert_gte:"-1" df2014_assert_same_as:"Unk001"`
-	Unk003         int32  `df2014_assert_gte:"-1"`
-	Unk004         int32  `df2014_assert_gte:"-1"`
-	Unk005         int32  `df2014_assert_gte:"-1" df2014_assert_same_as:"Unk001"`
-	Unk006         int32  `df2014_assert_gte:"-1"`
-	Unk007         int32  `df2014_assert_gte:"-1"`
-	Unk008         int32  `df2014_assert_gte:"-1"`
-	Unk009         int32  `df2014_assert_gte:"-1"`
-	Unk010         int32  `df2014_assert_gte:"-1"`
-	Unk011         int32  `df2014_assert_gte:"-1"`
-	Unk012         int32  `df2014_assert_gte:"-1"`
-	Unk013         int32  `df2014_assert_gte:"-1"`
-	Unk014         int32  `df2014_assert_gte:"-1"`
-	Unk015         int32  `df2014_assert_gte:"-1"`
-	Unk016         int32  `df2014_assert_gte:"-1"`
-	Unk017         int32  `df2014_assert_gte:"-1"`
-	Unk018         int32  `df2014_assert_gte:"-1"`
-	Unk019         int32  `df2014_assert_gte:"-1"`
-	Unk020         int32  `df2014_assert_gte:"-1"`
-	Unk021         int32  `df2014_assert_gte:"-1"`
-	Unk022         int32  `df2014_assert_gte:"-1"`
-	Unk023         int32  `df2014_assert_gte:"-1"`
-	Unk024         int32  `df2014_assert_gte:"-1"`
-	Unk025         int32  `df2014_assert_gte:"-1"`
-	Unk026         int32  `df2014_assert_gte:"-1"`
-	Unk027         int32  `df2014_assert_gte:"-1"`
-	Unk028         int32  `df2014_assert_gte:"-1"`
-	Name           *Name
-	Unk029         uint8 `df2014_assert_equals:"0x1"`
-	Unk030         int16 `df2014_assert_equals:"0"`
-	Unk031         int32 `df2014_assert_equals:"1"`
-	Unk032         int32 `df2014_assert_equals:"0"`
-	Unk033         int32 `df2014_assert_equals:"0"`
-	TranslatedName string
+	Unk000  uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
+	Unk001  int32  `df2014_assert_gte:"-1"`
+	Unk002  int32  `df2014_assert_gte:"-1"` //`df2014_assert_same_as:"Unk001"`
+	Unk003  int32  `df2014_assert_gte:"-1"`
+	Unk004  int32  `df2014_assert_gte:"-1"`
+	Unk005  int32  `df2014_assert_gte:"-1"` //`df2014_assert_same_as:"Unk001"`
+	Unk006  int32  `df2014_assert_gte:"-1"`
+	Unk007  int32  `df2014_assert_gte:"-1"`
+	Unk008  int32  `df2014_assert_gte:"-1"`
+	Unk009  int32  `df2014_assert_gte:"-1"`
+	Unk010  int32  `df2014_assert_gte:"-1"`
+	Unk011  int32  `df2014_assert_gte:"-1"`
+	Unk012  int32  `df2014_assert_gte:"-1"`
+	Unk013  int32  `df2014_assert_gte:"-1"`
+	TODO000 struct {
+		Name   *Name
+		Unk018 int8  `df2014_assert_equals:"1"`
+		Unk019 int16 `df2014_assert_equals:"0"`
+		Unk020 int32 `df2014_assert_equals:"1"`
+		Unk021 int32 `df2014_assert_equals:"0"`
+		Unk022 int32 `df2014_assert_equals:"0"`
+	} `df2014_version_max:"1169"`
+	TODO001 struct {
+		Unk014         int32 `df2014_assert_gte:"-1"`
+		Unk015         int32 `df2014_assert_gte:"-1"`
+		Unk016         int32 `df2014_assert_gte:"-1"`
+		Unk017         int32 `df2014_assert_gte:"-1"`
+		Unk018         int32 `df2014_assert_gte:"-1"`
+		Unk019         int32 `df2014_assert_gte:"-1"`
+		Unk020         int32 `df2014_assert_gte:"-1"`
+		Unk021         int32 `df2014_assert_gte:"-1"`
+		Unk022         int32 `df2014_assert_gte:"-1"`
+		Unk023         int32 `df2014_assert_gte:"-1"`
+		Unk024         int32 `df2014_assert_gte:"-1"`
+		Unk025         int32 `df2014_assert_gte:"-1"`
+		Unk026         int32 `df2014_assert_gte:"-1"`
+		Unk027         int32 `df2014_assert_gte:"-1"`
+		Unk028         int32 `df2014_assert_gte:"-1"`
+		Name           *Name
+		Unk029         uint8 `df2014_assert_equals:"0x1"`
+		Unk030         int16 `df2014_assert_equals:"0"`
+		Unk031         int32 `df2014_assert_equals:"1"`
+		Unk032         int32 `df2014_assert_equals:"0"`
+		Unk033         int32 `df2014_assert_equals:"0"`
+		TranslatedName string
+	} `df2014_version_min:"1205"`
 
-	GeneratedRaws WorldGeneratedRaws
+	GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1205"`
 	StringTables  WorldStringTables
 
-	Unk034 []WorldDatUnk034
-	Unk035 map[uint32]uint32
-	Unk036 map[uint32]bool
-	Unk037 map[uint32]bool
-	Unk038 map[uint32]bool
-	Unk039 map[uint32]bool `df2014_assert_same_length_as:"Unk035"`
-	Unk040 map[uint32]bool
-	Unk041 map[uint32]bool
-	Unk042 map[uint32]bool
-	Unk043 map[uint32]bool
-	Unk044 map[uint32]bool
-	Unk045 map[uint32]bool
-	Unk046 map[uint32]bool
-	Unk047 map[uint32]bool
-	Unk048 map[uint32]bool
-	Unk049 map[uint32]bool
-	Unk050 map[uint32]bool
-	Unk051 map[uint32]bool
-	Unk052 map[uint32]bool
-	Unk053 map[uint32]bool
-	Unk054 map[uint32]bool
+	TODO002 struct {
+		Unk000 int32 `df2014_assert_equals:"0"`
+		Unk001 int32 `df2014_assert_equals:"0"`
+		Unk002 map[uint32]bool
+		Unk003 map[uint32]bool
+		Unk004 int32 `df2014_assert_equals:"0"`
+		Unk005 int32 `df2014_assert_equals:"0"`
+		Unk006 int32 `df2014_assert_equals:"0"`
 
-	Books    []Book   `df2014_get_length_from:"Unk035" df2014_assert_id_set:"Unk035"`
-	Entities []Entity `df2014_get_length_from:"Unk037" df2014_assert_id_set:"Unk037"`
+		Entities []Entity `df2014_get_length_from:"Unk002" df2014_assert_id_set:"Unk002"`
+	} `df2014_version_max:"1169"`
+	TODO003 struct {
+		Unk034 []WorldDatUnk034
+		Unk035 map[uint32]uint32
+		Unk036 map[uint32]bool
+		Unk037 map[uint32]bool
+		Unk038 map[uint32]bool
+		Unk039 map[uint32]bool `df2014_assert_same_length_as:"Unk035"`
+		Unk040 map[uint32]bool
+		Unk041 map[uint32]bool
+		Unk042 map[uint32]bool
+		Unk043 map[uint32]bool
+		Unk044 map[uint32]bool
+		Unk045 map[uint32]bool
+		Unk046 map[uint32]bool
+		Unk047 map[uint32]bool
+		Unk048 map[uint32]bool
+		Unk049 map[uint32]bool
+		Unk050 map[uint32]bool
+		Unk051 map[uint32]bool
+		Unk052 map[uint32]bool
+		Unk053 map[uint32]bool
+		Unk054 map[uint32]bool
+
+		Books    []Book   `df2014_get_length_from:"Unk035" df2014_assert_id_set:"Unk035"`
+		Entities []Entity `df2014_get_length_from:"Unk037" df2014_assert_id_set:"Unk037"`
+	} `df2014_version_min:"1205"`
 }
 
 type WorldGeneratedRaws struct {
@@ -80,26 +103,28 @@ type WorldGeneratedRaws struct {
 }
 
 type WorldStringTables struct {
+	Tree              []string `df2014_version_max:"1169"`
 	Inorganic         []string
+	Gem               []string `df2014_version_max:"1169"`
 	Plant             []string
 	Body              []string
 	BodyGloss         []string
 	Creature          []string
 	Item              []string
-	Building          []string
+	Building          []string `df2014_version_min:"1205"`
 	Entity            []string
 	Word              []string
 	Symbol            []string
 	Translation       []string
-	Color             []string
-	Shape             []string
-	Pattern           []string
-	Reaction          []string
-	MaterialTemplate  []string
-	TissueTemplate    []string
-	BodyDetailPlan    []string
-	CreatureVariation []string
-	Interaction       []string
+	Color             []string `df2014_version_min:"1205"`
+	Shape             []string `df2014_version_min:"1205"`
+	Pattern           []string `df2014_version_min:"1205"`
+	Reaction          []string `df2014_version_min:"1205"`
+	MaterialTemplate  []string `df2014_version_min:"1205"`
+	TissueTemplate    []string `df2014_version_min:"1205"`
+	BodyDetailPlan    []string `df2014_version_min:"1205"`
+	CreatureVariation []string `df2014_version_min:"1205"`
+	Interaction       []string `df2014_version_min:"1205"`
 }
 
 type WorldDatUnk034 struct {

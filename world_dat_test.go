@@ -59,10 +59,10 @@ func TestWorldDat_22_110_22e(t *testing.T) {
 func TestWorldDat_22_110_22f(t *testing.T) {
 	testWorldDat(t, "work/df_22_110_22f/data/save/region1.dat")
 }
-func TestWorldDat_21_110_23a(t *testing.T) {
+func TestWorldDat_22_110_23a(t *testing.T) {
 	testWorldDat(t, "work/df_22_110_23a/data/save/region1.dat")
 }
-func TestWorldDat_21_120_23a(t *testing.T) {
+func TestWorldDat_22_120_23a(t *testing.T) {
 	testWorldDat(t, "work/df_22_120_23a/data/save/region1.dat")
 }
 func TestWorldDat_22_121_23b(t *testing.T) {
@@ -322,7 +322,7 @@ func testWorldDat(t *testing.T, fn string) {
 		t.Error(err)
 	}
 	if testing.Verbose() {
-		t.Log(string(prettyPrint(&w, reflect.ValueOf(w), nil, []byte{'\n'})))
+		t.Log(string(prettyPrint(&w, reflect.ValueOf(w), nil, []byte{'\n'}, "")))
 	}
 
 	if err == nil || testing.Verbose() {

@@ -1,6 +1,7 @@
 package df2014
 
 import (
+	"reflect"
 	"strconv"
 )
 
@@ -17,7 +18,7 @@ const (
 	Outcast
 )
 
-var entityTypes = [...]string{
+var entityTypes = []string{
 	"civilization",
 	"site government",
 	"vessel crew",
@@ -28,25 +29,18 @@ var entityTypes = [...]string{
 	"outcast",
 }
 
-func (i EntityType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	buf = strconv.AppendUint(buf, uint64(i), 10)
-	buf = append(buf, " (0x"...)
-	buf = strconv.AppendUint(buf, uint64(i), 16)
-	buf = append(buf, ')')
-
-	if int(i) < len(entityTypes) {
-		buf = append(buf, " ("...)
-		buf = append(buf, entityTypes[i]...)
-		buf = append(buf, ')')
-	}
-
-	return buf
+func (i EntityType) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
+	return prettyPrintIndex(int64(i), uint64(i), entityTypes, buf)
 }
 
-type EntityCreatureIndex uint16
+type EntityFlags uint32
 
-func (i EntityCreatureIndex) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
-	return prettyPrintIndex(int64(i), uint64(i), w.StringTables.Creature, buf)
+var entityFlags = map[uint8]string{
+	4: "ruin",
+}
+
+func (f EntityFlags) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
+	return prettyPrintFlags(uint64(f), entityFlags, buf)
 }
 
 type RaceCasteList struct {
@@ -54,7 +48,7 @@ type RaceCasteList struct {
 	Caste []uint16 `df2014_assert_same_length_as:"Race"`
 }
 
-func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	buf = append(buf, "(len = "...)
 	buf = strconv.AppendInt(buf, int64(len(rcl.Race)), 10)
 	buf = append(buf, ") {"...)
@@ -67,7 +61,7 @@ func (rcl RaceCasteList) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
 		buf = append(buf, indent...)
 		buf = strconv.AppendInt(buf, int64(i), 10)
 		buf = append(buf, ": "...)
-		buf = CreatureIndex(r).prettyPrint(w, buf, indent)
+		buf = CreatureIndex(r).prettyPrint(w, buf, indent, "")
 		buf = append(buf, ": "...)
 		buf = strconv.AppendUint(buf, uint64(c), 10)
 		buf = append(buf, " (0x"...)
@@ -123,7 +117,7 @@ var entityEthicResponses = [...]string{
 	"required",
 }
 
-func (i EntityEthicResponse) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+func (i EntityEthicResponse) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	return prettyPrintIndex(int64(i), uint64(i), entityEthicResponses[:], buf)
 }
 
@@ -132,183 +126,97 @@ type Entity struct {
 	ID    uint32
 	Class string
 
-	Unk000 int16 // dfhack:resources.unk15a 25 on subterranean_animal_peoples civs
-	Unk001 int16 // dfhack:resources.unk15b 75 on [...], always ≥ Unk000
+	MinTemperature int16 `df2014_version_min:"1131"`
+	MaxTemperature int16 `df2014_version_min:"1131"`
 
-	SaveFileID   uint32
-	NextMemberID uint16
-	Name         *Name
-	Creature     EntityCreatureIndex
-	Flags        uint32
+	UnitChunkID    uint32
+	UnitChunkSubID uint16
 
-	Materials EntityMaterials
-	Resources EntityResources
+	Unused_41C []uint32 `df2014_assert_equals:"[]uint32{}"`
 
-	Unk095 int16 `df2014_assert_equals:"-1"`
-	Unk096 uint32
-	Unk097 int16 `df2014_assert_equals:"-1"`
-	Unk098 uint32
-	Unk099 int16 `df2014_assert_equals:"-1"`
-	Unk100 uint32
+	Name  *Name
+	Race  CreatureIndex16
+	Flags EntityFlags
 
-	Unk101 []uint16
-	Unk102 []uint16
-	Unk103 []uint16
-	Unk104 []uint16
-	Unk105 []uint16
-	Unk106 []uint16
-	Unk107 []uint16
-	Unk108 []uint16
-	Unk109 []uint16
-	Unk110 []uint16
-	Unk111 []uint16
-	Unk112 []uint16
-	Unk113 []uint16
-	Unk114 []uint16
-	Unk115 []uint16
+	Leather      []int16
+	Cloth        []int16
+	Silk         []int16
+	Crafts       MaterialList
+	Glass        MaterialList
+	Wood         MaterialList
+	Pets         []int16
+	Cages        MaterialList
+	Drinks       MaterialList
+	Cheese       MaterialList
+	Mill         MaterialList
+	Extract      MaterialList
+	MeatFish     []int16
+	Plants       []int16
+	Wagons       []int16
+	PackAnimals  []int16
+	WagonPullers []int16
+	Mounts       []int16
+	SiegeMinions []int16
 
-	Unk116 MaterialList
-	Unk118 MaterialList
-	Unk120 MaterialList
-	Unk122 MaterialList
-	Unk124 MaterialList
-	Unk126 MaterialList
-	Unk128 MaterialList
+	LyeWood     []int16      `df2014_version_min:"1147"`
+	CraftMetals []int16      `df2014_version_min:"1147"`
+	Stone       MaterialList `df2014_version_min:"1147"`
+	Gem         MaterialList `df2014_version_min:"1147"`
+	Bones       []int16      `df2014_version_min:"1147"`
+	Shells      []int16      `df2014_version_min:"1147"`
+	Pearls      []int16      `df2014_version_min:"1147"`
+	Ivory       []int16      `df2014_version_min:"1147"`
+	Horn        []int16      `df2014_version_min:"1147"`
+	Other       MaterialList `df2014_version_min:"1147"`
+	SpecialMats [3][2]int16  `df2014_assert_equals:"[3][2]int16{[2]int16{-1, 0}, [2]int16{-1, 0}, [2]int16{-1, 0}}"`
 
-	Unk130 uint32 `df2014_assert_equals:"0x0"`
-	Unk131 uint32 `df2014_assert_equals:"0x0"`
-	Unk132 uint32 `df2014_assert_equals:"0x0"`
-	Unk133 uint32 `df2014_assert_equals:"0x0"`
-	Unk134 uint32 `df2014_assert_equals:"0x0"`
-	Unk135 uint32 `df2014_assert_equals:"0x0"`
+	Diggers     []int16 `df2014_version_min:"1130"`
+	Weapons     []int16 `df2014_version_min:"1130"`
+	Armor       []int16 `df2014_version_min:"1130"`
+	Ammo        []int16 `df2014_version_min:"1130"`
+	Helms       []int16 `df2014_version_min:"1130"`
+	Gloves      []int16 `df2014_version_min:"1130"`
+	Shoes       []int16 `df2014_version_min:"1130"`
+	Pants       []int16 `df2014_version_min:"1130"`
+	Shields     []int16 `df2014_version_min:"1130"`
+	TrapComps   []int16 `df2014_version_min:"1130"`
+	Toys        []int16 `df2014_version_min:"1130"`
+	Instruments []int16 `df2014_version_min:"1130"`
+	SiegeAmmo   []int16 `df2014_version_min:"1130"`
+
+	WeaponMaterials MaterialList
+	ArmorMaterials  MaterialList
+
+	/*
+		ActivityStats *struct {
+			Stats                 EntityActivityStatistics
+			LastCommunicateSeason int16
+			LastCommunicateYear   int32
+		}
+		Imports, Exports, Offerings int32
+		OfferingsHistory            [10]int32
+		HostileLevel, SiegeCount    int32
+	*/
+
+	Discoveries     EntityDiscoveredMatGlosses
+	MeatFishRecipes []EntityRecipe
+	OtherRecipes    []EntityRecipe
+	OwnedItems      []int32
+
+	/*
+		MeetingEvents []EntityMeetingEvent
+	*/
 
 	EntityLinks []EntityEntityLink
-	SiteLinks   []EntitySiteLink `df2014_assert_id_parent:"EntityID"`
-	Figures     []uint32
-	Populations []uint32
-	Nemises     []uint32
+	SiteLinks   []EntitySiteLink
+	FigureIDs   []int32
+	NemesisIDs  []int32
 
-	ArtImageTypes  []uint16
-	ArtImageIDs    []uint32 `df2014_assert_same_length_as:"ArtImageTypes"`
-	ArtImageSubIDs []uint16 `df2014_assert_same_length_as:"ArtImageTypes"`
+	ArtImageTypes  []int16 `df2014_version_min:"1147"`
+	ArtImageIDs    []int32 `df2014_version_min:"1147"`
+	ArtImageSubIDs []int16 `df2014_version_min:"1147"`
 
-	DummyOneLengthArray [1]struct{}
-
-	Unk143 []EntityUnk143 `df2014_assert_same_length_as:"DummyOneLengthArray"`
-	Unk146 []uint8        `df2014_assert_same_length_as:"DummyOneLengthArray"`
-	Unk148 []bool         `df2014_assert_same_length_as:"DummyOneLengthArray"`
-	Unk150 []uint16       `df2014_assert_same_length_as:"DummyOneLengthArray"`
-	Unk152 []uint16       `df2014_assert_same_length_as:"DummyOneLengthArray"`
-	Unk153 []EntityUnk153
-	Unk154 []uint16
-	Unk155 []uint16
-	Unk156 []EntityUnk156
-	Unk157 []EntityUnk157
-
-	Unk158 uint32 `df2014_assert_equals:"0x0"`
-	Unk159 uint32 `df2014_assert_equals:"0x0"`
-	Unk160 uint32 `df2014_assert_equals:"0x0"`
-	Unk161 uint32 `df2014_assert_equals:"0x0"`
-
-	Unk162 uint16 `df2014_assert_equals:"0x0"`
-	Unk163 uint16 `df2014_assert_equals:"0xd"`
-	Unk164 uint16 `df2014_assert_equals:"0x10"`
-	Unk165 uint16 `df2014_assert_equals:"0x10"`
-	Unk166 uint16 `df2014_assert_equals:"0x1"`
-	Unk167 uint16 `df2014_assert_equals:"0x1"`
-	Unk168 uint16 `df2014_assert_equals:"0xf"`
-	Unk169 uint16 `df2014_assert_equals:"0x0"`
-	Unk170 uint16 `df2014_assert_equals:"0x1"`
-	Unk171 uint16 `df2014_assert_equals:"0xf"`
-	Unk172 uint16 `df2014_assert_equals:"0xf"`
-	Unk173 uint16 `df2014_assert_equals:"0x0"`
-	Unk174 uint16 `df2014_assert_equals:"0x0"`
-	Unk175 uint16 `df2014_assert_equals:"0x0"`
-	Unk176 uint16 `df2014_assert_equals:"0x0"`
-	Unk177 uint16 `df2014_assert_equals:"0x0"`
-	Unk178 uint16 `df2014_assert_equals:"0x2"`
-	Unk179 uint16 `df2014_assert_equals:"0xf"`
-	Unk180 uint16 `df2014_assert_equals:"0xf"`
-	Unk181 uint16 `df2014_assert_equals:"0xf"`
-	Unk182 uint16 `df2014_assert_equals:"0xf"`
-	Unk183 uint16 `df2014_assert_equals:"0xf"`
-	Unk184 uint16 `df2014_assert_equals:"0xf"`
-
-	Unk185 uint32 `df2014_assert_equals:"0x0"`
-	Unk186 uint32 `df2014_assert_equals:"0x0"`
-	Unk187 uint32 `df2014_assert_equals:"0x0"`
-	Unk188 uint32 `df2014_assert_equals:"0x0"`
-	Unk189 uint32 `df2014_assert_equals:"0x0"`
-	Unk190 uint32 `df2014_assert_equals:"0x0"`
-	Unk191 uint32 `df2014_assert_equals:"0x0"`
-	Unk192 uint32 `df2014_assert_equals:"0x0"`
-	Unk193 uint32 `df2014_assert_equals:"0x0"`
-	Unk194 uint32 `df2014_assert_equals:"0x0"`
-	Unk195 uint32 `df2014_assert_equals:"0x0"`
-	Unk196 uint32 `df2014_assert_equals:"0x0"`
-	Unk197 uint32 `df2014_assert_equals:"0x0"`
-	Unk198 uint32 `df2014_assert_equals:"0x0"`
-	Unk199 uint32 `df2014_assert_equals:"0x0"`
-	Unk200 uint32 `df2014_assert_equals:"0x0"`
-	Unk201 uint32 `df2014_assert_equals:"0x0"`
-	Unk202 uint32 `df2014_assert_equals:"0x0"`
-	Unk203 uint32 `df2014_assert_equals:"0x0"`
-	Unk204 uint32 `df2014_assert_equals:"0x0"`
-	Unk205 uint32 `df2014_assert_equals:"0x0"`
-	Unk206 uint32 `df2014_assert_equals:"0x0"`
-	Unk207 uint32 `df2014_assert_equals:"0x0"`
-	Unk208 uint32 `df2014_assert_equals:"0x0"`
-	Unk209 uint32 `df2014_assert_equals:"0x0"`
-	Unk210 uint32 `df2014_assert_equals:"0x0"`
-	Unk211 uint32 `df2014_assert_equals:"0x0"`
-	Unk212 uint32 `df2014_assert_equals:"0x0"`
-	Unk213 uint32 `df2014_assert_equals:"0x0"`
-	Unk214 uint32 `df2014_assert_equals:"0x0"`
-	Unk215 uint32 `df2014_assert_equals:"0x0"`
-	Unk216 uint32 `df2014_assert_equals:"0x0"`
-	Unk217 uint32 `df2014_assert_equals:"0x0"`
-	Unk218 uint32 `df2014_assert_equals:"0x0"`
-	Unk219 uint32 `df2014_assert_equals:"0x0"`
-	Unk220 uint32 `df2014_assert_equals:"0x0"`
-	Unk221 uint32 `df2014_assert_equals:"0x0"`
-	Unk222 uint32 `df2014_assert_equals:"0x0"`
-	Unk223 uint32 `df2014_assert_equals:"0x0"`
-	Unk224 uint32 `df2014_assert_equals:"0x0"`
-	Unk225 uint32 `df2014_assert_equals:"0x0"`
-	Unk226 uint32 `df2014_assert_equals:"0x0"`
-	Unk227 uint32 `df2014_assert_equals:"0x0"`
-	Unk228 uint32 `df2014_assert_equals:"0x0"`
-	Unk229 uint32 `df2014_assert_equals:"0x0"`
-	Unk230 uint32 `df2014_assert_equals:"0x0"`
-	Unk231 int32  `df2014_assert_equals:"-1"`
-	Unk232 uint32 `df2014_assert_equals:"0x0"`
-	Unk233 int32  `df2014_assert_equals:"-1"`
-	Unk234 uint32 `df2014_assert_equals:"0x0"`
-	Unk235 uint32 `df2014_assert_equals:"0x0"`
-	Unk236 uint32 `df2014_assert_equals:"0x0"`
-	Unk237 uint32 `df2014_assert_equals:"0x0"`
-	Unk238 uint32 `df2014_assert_equals:"0x0"`
-	Unk239 uint32 `df2014_assert_equals:"0x0"`
-	Unk240 uint32 `df2014_assert_equals:"0x0"`
-	Unk241 uint32 `df2014_assert_equals:"0x0"`
-	Unk242 uint32 `df2014_assert_equals:"0x0"`
-	Unk243 uint32 `df2014_assert_equals:"0x0"`
-	Unk244 uint32 `df2014_assert_equals:"0x0"`
-	Unk245 uint32 `df2014_assert_equals:"0x0"`
-	Unk246 uint32 `df2014_assert_equals:"0x0"`
-	Unk247 uint32 `df2014_assert_equals:"0x0"`
-	Unk248 uint32 `df2014_assert_equals:"0x0"`
-	Unk249 uint32 `df2014_assert_equals:"0x0"`
-	Unk250 uint8  `df2014_assert_equals:"0x0"`
-
-	Unk251 []EntityUnk251
-
-	Unk252 uint32 `df2014_assert_equals:"0x0"`
-	Unk253 uint32 `df2014_assert_equals:"0x0"`
-	Unk254 uint32 `df2014_assert_equals:"0x0"`
-	Unk255 uint32 `df2014_assert_equals:"0x0"`
-	Unk256 uint32 `df2014_assert_equals:"0x0"`
-	Unk257 uint32 `df2014_assert_equals:"0x0"`
+	Uniforms []EntityUniform `df2014_version_min:"1147"`
 }
 
 type EntityMaterials struct {
@@ -374,7 +282,7 @@ var entityEntityLinkTypes = [...]string{
 	"child",
 }
 
-func (i EntityEntityLinkType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+func (i EntityEntityLinkType) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	buf = strconv.AppendUint(buf, uint64(i), 10)
 	buf = append(buf, " (0x"...)
 	buf = strconv.AppendUint(buf, uint64(i), 16)
@@ -395,21 +303,12 @@ type EntityEntityLink struct {
 	Strength uint16 `df2014_assert_lte:"100"`
 }
 
+type EntitySiteLinkType uint16
+
 type EntitySiteLink struct {
-	SiteID   uint32
-	EntityID uint32
-	Unk002   int32 `df2014_assert_gte:"-1"`
-	Unk003   int32 `df2014_assert_gte:"-1"`
-	Unk004   int32 `df2014_assert_equals:"-1"`
-	Unk005   int32 `df2014_assert_equals:"-1"`
-	Unk006   uint32
-	Unk007   uint32
-	Unk008   uint32 `df2014_assert_equals:"0x0"` // according to dfhack, this is a vector of pointers
-	Unk009   uint32
-	Unk010   uint32
-	Strength uint32 `df2014_assert_lte:"100"`
-	Unk012   uint32 `df2014_assert_equals:"0x0"`
-	Unk013   uint32 `df2014_assert_equals:"0x0"`
+	Type     EntitySiteLinkType
+	ID       uint32
+	Strength uint16 `df2014_assert_lte:"100"`
 }
 
 type EntityUnk143 struct {
@@ -446,4 +345,38 @@ type EntityUnk251 struct {
 	Unk006 uint32 `df2014_assert_same_as:"Unk004"`
 	Unk007 int32  `df2014_assert_equals:"-1"`
 	Unk008 uint32 `df2014_assert_equals:"0x0"`
+}
+
+type EntityDiscoveredMatGlosses struct {
+	CreatureFoods []bool `df2014_key_is_string:"Creature"`
+	Creatures     []bool `df2014_key_is_string:"Creature"`
+	PlantFoods    []bool `df2014_key_is_string:"Plant"`
+	Plants        []bool `df2014_key_is_string:"Plant"`
+	Trees         []bool `df2014_key_is_string:"Tree"`
+}
+
+type EntityRecipe struct {
+	SubType      int16
+	ItemTypes    []int16
+	ItemSubtypes []int16
+	Materials    []int16
+	MatGlosses   []int16
+}
+
+type EntityUniform struct {
+	ID           int16
+	ItemTypes    []int16
+	ItemSubtypes []int16
+	ItemInfo     []EntityUniformItem
+}
+
+type EntityUniformItem struct {
+	RandomDye          int8
+	ArmorLevel         int8
+	ItemColor          int16
+	ArtImageChunk      int32
+	ArtImageID         int16
+	ImageThreadColor   int16
+	ImageMaterialClass int16
+	MakerRace          int16 `df2014_version_min:"1164"`
 }

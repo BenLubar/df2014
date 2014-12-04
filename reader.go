@@ -490,7 +490,7 @@ var saveVersions = map[SaveVersion]string{
 	1474: "0.40.19",
 }
 
-func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	buf = strconv.AppendInt(buf, int64(i), 10)
 	buf = append(buf, " (0x"...)
 	buf = strconv.AppendUint(buf, uint64(i), 16)
@@ -522,7 +522,7 @@ var compressionTypeNames = []string{
 	Special40d:   "special: 40d",
 }
 
-func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte) []byte {
+func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	return prettyPrintIndex(int64(i), uint64(i), compressionTypeNames, buf)
 }
 
