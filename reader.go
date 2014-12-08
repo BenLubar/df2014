@@ -10,6 +10,17 @@ import (
 	"strconv"
 )
 
+func allocate(f func()) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
+	f()
+	return
+}
+
 type NestedError struct {
 	Message string
 	Inner   error
@@ -207,13 +218,15 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 		if err != nil {
 			return err
 		}
-		if flag {
-			v.Set(reflect.New(v.Type().Elem()))
-			return r.DecodeValue(world, v.Elem())
-		} else {
+		if !flag {
 			v.Set(reflect.Zero(v.Type()))
 			return nil
 		}
+		err = allocate(func() { v.Set(reflect.New(v.Type().Elem())) })
+		if err != nil {
+			return err
+		}
+		return r.DecodeValue(world, v.Elem())
 
 	case reflect.String:
 		s, err := r.string()
@@ -233,7 +246,10 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			return fmt.Errorf("df2014: negative length (%d)", length)
 		}
 
-		v.Set(reflect.MakeSlice(v.Type(), int(length), int(length)))
+		err = allocate(func() { v.Set(reflect.MakeSlice(v.Type(), int(length), int(length))) })
+		if err != nil {
+			return err
+		}
 
 		fallthrough
 	case reflect.Array:
@@ -369,13 +385,18 @@ func (r *Reader) string() (string, error) {
 		return "", fmt.Errorf("df2014: negative length (%d)", length)
 	}
 
-	buf := make([]byte, length)
+	var buf []byte
+	var s []rune
+
+	err = allocate(func() { buf, s = make([]byte, length), make([]rune, length) })
+	if err != nil {
+		return "", err
+	}
 	_, err = io.ReadFull(r, buf)
 	if err != nil {
 		return "", err
 	}
 
-	s := make([]rune, length)
 	for i, b := range buf {
 		s[i] = cp437[b]
 	}

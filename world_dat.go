@@ -3,52 +3,26 @@ package df2014
 type WorldDat struct {
 	Header
 
-	Unk000  uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
-	Unk001  int32  `df2014_assert_gte:"-1"`
-	Unk002  int32  `df2014_assert_gte:"-1"` //`df2014_assert_same_as:"Unk001"`
-	Unk003  int32  `df2014_assert_gte:"-1"`
-	Unk004  int32  `df2014_assert_gte:"-1"`
-	Unk005  int32  `df2014_assert_gte:"-1"` //`df2014_assert_same_as:"Unk001"`
-	Unk006  int32  `df2014_assert_gte:"-1"`
-	Unk007  int32  `df2014_assert_gte:"-1"`
-	Unk008  int32  `df2014_assert_gte:"-1"`
-	Unk009  int32  `df2014_assert_gte:"-1"`
-	Unk010  int32  `df2014_assert_gte:"-1"`
-	Unk011  int32  `df2014_assert_gte:"-1"`
-	Unk012  int32  `df2014_assert_gte:"-1"`
-	Unk013  int32  `df2014_assert_gte:"-1"`
-	TODO000 struct {
-		Name   *Name
-		Unk018 int8  `df2014_assert_equals:"1"`
-		Unk019 int16 `df2014_assert_equals:"0"`
-		Unk020 int32 `df2014_assert_equals:"1"`
-		Unk021 int32 `df2014_assert_equals:"0"`
-		Unk022 int32 `df2014_assert_equals:"0"`
-	} `df2014_version_max:"1169"`
-	TODO001 struct {
-		Unk014         int32 `df2014_assert_gte:"-1"`
-		Unk015         int32 `df2014_assert_gte:"-1"`
-		Unk016         int32 `df2014_assert_gte:"-1"`
-		Unk017         int32 `df2014_assert_gte:"-1"`
-		Unk018         int32 `df2014_assert_gte:"-1"`
-		Unk019         int32 `df2014_assert_gte:"-1"`
-		Unk020         int32 `df2014_assert_gte:"-1"`
-		Unk021         int32 `df2014_assert_gte:"-1"`
-		Unk022         int32 `df2014_assert_gte:"-1"`
-		Unk023         int32 `df2014_assert_gte:"-1"`
-		Unk024         int32 `df2014_assert_gte:"-1"`
-		Unk025         int32 `df2014_assert_gte:"-1"`
-		Unk026         int32 `df2014_assert_gte:"-1"`
-		Unk027         int32 `df2014_assert_gte:"-1"`
-		Unk028         int32 `df2014_assert_gte:"-1"`
-		Name           *Name
-		Unk029         uint8 `df2014_assert_equals:"0x1"`
-		Unk030         int16 `df2014_assert_equals:"0"`
-		Unk031         int32 `df2014_assert_equals:"1"`
-		Unk032         int32 `df2014_assert_equals:"0"`
-		Unk033         int32 `df2014_assert_equals:"0"`
-		TranslatedName string
-	} `df2014_version_min:"1205"`
+	Unk000 uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
+	Unk001 int32  `df2014_assert_gte:"-1"`
+	Unk002 int32  `df2014_assert_gte:"-1"`
+	Unk003 int32  `df2014_assert_gte:"-1"`
+	Unk004 int32  `df2014_assert_gte:"-1"`
+	Unk005 int32  `df2014_assert_gte:"-1"`
+	Unk006 int32  `df2014_assert_gte:"-1"`
+	Unk007 int32  `df2014_assert_gte:"-1"`
+	Unk008 int32  `df2014_assert_gte:"-1"`
+	Unk009 int32  `df2014_assert_gte:"-1"`
+	Unk010 int32  `df2014_assert_gte:"-1"`
+	Unk011 int32  `df2014_assert_gte:"-1"`
+	Unk012 int32  `df2014_assert_gte:"-1"`
+	Unk013 int32  `df2014_assert_gte:"-1"`
+	Name   *Name
+	Unk018 int8  `df2014_assert_equals:"1"`
+	Unk019 int16 `df2014_assert_equals:"0"`
+	Unk020 int32 `df2014_assert_equals:"1"`
+	Unk021 int32 `df2014_assert_equals:"0"`
+	Unk022 int32 `df2014_assert_equals:"0"`
 
 	GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1205"`
 	StringTables  WorldStringTables

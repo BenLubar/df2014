@@ -168,7 +168,9 @@ type Entity struct {
 	Ivory       []int16      `df2014_version_min:"1147"`
 	Horn        []int16      `df2014_version_min:"1147"`
 	Other       MaterialList `df2014_version_min:"1147"`
-	SpecialMats [3][2]int16  `df2014_assert_equals:"[3][2]int16{[2]int16{-1, 0}, [2]int16{-1, 0}, [2]int16{-1, 0}}"`
+	SpecialMat0 Material
+	SpecialMat1 Material
+	SpecialMat2 Material
 
 	Diggers     []int16 `df2014_version_min:"1130"`
 	Weapons     []int16 `df2014_version_min:"1130"`

@@ -5,6 +5,22 @@ import (
 	"strconv"
 )
 
+type Material struct {
+	Type     MaterialType
+	Index    int32 `df2014_version_min:"1205"`
+	Index23a int16 `df2014_version_max:"1169"`
+}
+
+func (m Material) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
+	convert := MaterialType.Convert
+	if w.Header.Version < 1205 {
+		convert = MaterialType.Convert23a
+		m.Index = int32(m.Index23a)
+	}
+
+	return prettyPrint(w, reflect.ValueOf(convert(m.Type, m.Index)), buf, indent, outerTag)
+}
+
 type MaterialList struct {
 	Type     []MaterialType
 	Index    []int32 `df2014_assert_same_length_as:"Type" df2014_version_min:"1205"`
