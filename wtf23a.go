@@ -22,13 +22,13 @@ func (wtf *wtf23a) init(r io.Reader) error {
 	}
 
 	if wtf.Index%4 != 0 {
-		return fmt.Errorf("df2014: cannot guess compression type")
+		return fmt.Errorf("df2014: cannot guess compression type (index = %d/4)", wtf.Index)
 	}
 
 	wtf.Index /= 4
 
-	if wtf.Index >= 624 {
-		return fmt.Errorf("df2014: cannot guess compression type")
+	if wtf.Index > 624 {
+		return fmt.Errorf("df2014: cannot guess compression type (index = %d)", wtf.Index)
 	}
 
 	return nil

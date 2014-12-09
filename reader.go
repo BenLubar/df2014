@@ -10,16 +10,7 @@ import (
 	"strconv"
 )
 
-func allocate(f func()) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = r.(error)
-		}
-	}()
-
-	f()
-	return
-}
+const MaxAlloc = 1 << 30 // allocations over 1 gigabyte are probably mistakes.
 
 type NestedError struct {
 	Message string
@@ -222,10 +213,7 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			v.Set(reflect.Zero(v.Type()))
 			return nil
 		}
-		err = allocate(func() { v.Set(reflect.New(v.Type().Elem())) })
-		if err != nil {
-			return err
-		}
+		v.Set(reflect.New(v.Type().Elem()))
 		return r.DecodeValue(world, v.Elem())
 
 	case reflect.String:
@@ -246,10 +234,10 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			return fmt.Errorf("df2014: negative length (%d)", length)
 		}
 
-		err = allocate(func() { v.Set(reflect.MakeSlice(v.Type(), int(length), int(length))) })
-		if err != nil {
-			return err
+		if size := v.Type().Size() * uintptr(length); size > MaxAlloc {
+			return fmt.Errorf("df2014: huge alloc (%d bytes)", size)
 		}
+		v.Set(reflect.MakeSlice(v.Type(), int(length), int(length)))
 
 		fallthrough
 	case reflect.Array:
@@ -385,13 +373,8 @@ func (r *Reader) string() (string, error) {
 		return "", fmt.Errorf("df2014: negative length (%d)", length)
 	}
 
-	var buf []byte
-	var s []rune
+	buf, s := make([]byte, length), make([]rune, length)
 
-	err = allocate(func() { buf, s = make([]byte, length), make([]rune, length) })
-	if err != nil {
-		return "", err
-	}
 	_, err = io.ReadFull(r, buf)
 	if err != nil {
 		return "", err
