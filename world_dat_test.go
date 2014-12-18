@@ -333,7 +333,7 @@ func testWorldDat(t *testing.T, fn string) {
 			t.Fatal(err)
 		}
 		if len(b) != 0 {
-			t.Error("Unparsed data:\n" + string(b))
+			t.Errorf("Unparsed data:\n%s", b)
 		}
 	}
 }

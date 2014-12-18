@@ -58,6 +58,16 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte, outerTag refl
 					continue
 				}
 			}
+			if tag := fieldTag.Get("df2014_type"); tag != "" {
+				expected, err := strconv.ParseInt(tag, 0, 64)
+				if err != nil {
+					panic(err)
+				}
+
+				if v.FieldByName("Type").Int() != expected {
+					continue
+				}
+			}
 			buf = append(buf, indent...)
 			buf = append(buf, v.Type().Field(i).Name...)
 			buf = append(buf, ": "...)

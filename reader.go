@@ -52,16 +52,9 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			v.Set(reflect.ValueOf(b))
 			return nil
 		}
-		if _, ok := v.Interface().(CMV); ok {
-			h, err := r.cmv()
-			if err != nil {
-				return err
-			}
-			v.Set(reflect.ValueOf(h))
-			return nil
-		}
 		for i := 0; i < v.NumField(); i++ {
-			if tag := v.Type().Field(i).Tag.Get("df2014_version_min"); tag != "" {
+			fieldTag := v.Type().Field(i).Tag
+			if tag := fieldTag.Get("df2014_version_min"); tag != "" {
 				expected, err := strconv.ParseUint(tag, 0, 32)
 				if err != nil {
 					return err
@@ -71,7 +64,7 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 					continue
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_version_max"); tag != "" {
+			if tag := fieldTag.Get("df2014_version_max"); tag != "" {
 				expected, err := strconv.ParseUint(tag, 0, 32)
 				if err != nil {
 					return err
@@ -81,7 +74,17 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 					continue
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_get_length_from"); tag != "" {
+			if tag := fieldTag.Get("df2014_type"); tag != "" {
+				expected, err := strconv.ParseInt(tag, 0, 64)
+				if err != nil {
+					return err
+				}
+
+				if v.FieldByName("Type").Int() != expected {
+					continue
+				}
+			}
+			if tag := fieldTag.Get("df2014_get_length_from"); tag != "" {
 				l := v.FieldByName(tag).Len()
 				v.Field(i).Set(reflect.MakeSlice(v.Type().Field(i).Type, l, l))
 

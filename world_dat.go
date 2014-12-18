@@ -3,68 +3,67 @@ package df2014
 type WorldDat struct {
 	Header
 
-	Unk000         uint16 `df2014_assert_equals:"0x0" df2014_version_min:"1205"`
-	Unk001         int32  `df2014_assert_gte:"-1"`
-	Unk002         int32  `df2014_assert_gte:"-1"`
-	Unk003         int32  `df2014_assert_gte:"-1"`
-	Unk004         int32  `df2014_assert_gte:"-1"`
-	Unk005         int32  `df2014_assert_gte:"-1"`
-	Unk006         int32  `df2014_assert_gte:"-1"`
-	Unk007         int32  `df2014_assert_gte:"-1"`
-	Unk008         int32  `df2014_assert_gte:"-1"`
-	Unk009         int32  `df2014_assert_gte:"-1"`
-	Unk010         int32  `df2014_assert_gte:"-1"`
-	Unk011         int32  `df2014_assert_gte:"-1"`
-	Unk012         int32  `df2014_assert_gte:"-1"`
-	Unk013         int32  `df2014_assert_gte:"-1"`
-	Name           *Name
-	Unk018         int8   `df2014_assert_equals:"1"`
-	Unk019         int16  `df2014_assert_equals:"0"`
-	Unk020         int32  `df2014_assert_equals:"1"`
-	Unk021         int32  `df2014_assert_equals:"0"`
-	Unk022         int32  `df2014_assert_equals:"0"`
-	TranslatedName string `df2014_version_min:"1110"`
+	Unused000 int16 `df2014_assert_equals:"0" df2014_version_min:"1205"`
+	Unused001 int32 `df2014_assert_equals:"0" df2014_version_max:"1169"`
 
-	GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1205"`
-	StringTables  WorldStringTables
+	// SaveSlot is the original region number of this world. A value of 0 means
+	// the save will be titled region1. 1 means region2, and so on.
+	SaveSlot int32 `df2014_assert_gte:"0"`
 
-	TODO002 struct {
-		Unk000 int32 `df2014_assert_equals:"0"`
-		Unk001 int32 `df2014_assert_equals:"0"`
-		Unk002 map[uint32]bool
-		Unk003 map[uint32]bool
-		Unk004 int32 `df2014_assert_equals:"0"`
-		Unk005 int32 `df2014_assert_equals:"0"`
-		Unk006 int32 `df2014_assert_equals:"0"`
+	NextIDs WorldNextID
 
-		Entities []Entity `df2014_get_length_from:"Unk002" df2014_assert_id_set:"Unk002"`
-	} `df2014_version_max:"1169"`
-	TODO003 struct {
-		Unk034 []WorldDatUnk034
-		Unk035 map[uint32]uint32
-		Unk036 map[uint32]bool
-		Unk037 map[uint32]bool
-		Unk038 map[uint32]bool
-		Unk039 map[uint32]bool `df2014_assert_same_length_as:"Unk035"`
-		Unk040 map[uint32]bool
-		Unk041 map[uint32]bool
-		Unk042 map[uint32]bool
-		Unk043 map[uint32]bool
-		Unk044 map[uint32]bool
-		Unk045 map[uint32]bool
-		Unk046 map[uint32]bool
-		Unk047 map[uint32]bool
-		Unk048 map[uint32]bool
-		Unk049 map[uint32]bool
-		Unk050 map[uint32]bool
-		Unk051 map[uint32]bool
-		Unk052 map[uint32]bool
-		Unk053 map[uint32]bool
-		Unk054 map[uint32]bool
+	Name   *Name
+	Unk050 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk051 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk052 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk054 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk055 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk056 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk057 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk058 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk059 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk060 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk061 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk062 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk063 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk064 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
 
-		Books    []Book   `df2014_get_length_from:"Unk035" df2014_assert_id_set:"Unk035"`
-		Entities []Entity `df2014_get_length_from:"Unk037" df2014_assert_id_set:"Unk037"`
-	} `df2014_version_min:"1205"`
+	// all I know about the next five variables is that they add up to 15 bytes.
+	Unk100 int8  `df2014_assert_equals:"1"`
+	Unk101 int16 `df2014_assert_equals:"0"`
+	Unk102 int32 `df2014_assert_equals:"1"`
+	Unk103 int32 `df2014_assert_equals:"0"`
+	Unk104 int32 `df2014_assert_equals:"0"`
+
+	Title string `df2014_version_min:"1110"`
+
+	//GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1205"`
+	StringTables WorldStringTables
+
+	ItemIDs     map[uint32]bool
+	BuildingIDs map[uint32]bool
+	EntityIDs   map[uint32]bool
+	NemesisIDs  map[uint32]bool
+	ArtifactIDs map[uint32]bool
+	CoinBatches int32 `df2014_assert_gte:"0"`
+	TaskTypes   []int16
+
+	Items    []Item   `df2014_get_length_from:"ItemIDs" df2014_assert_id_set:"ItemIDs"`
+	Entities []Entity `df2014_get_length_from:"EntityIDs" df2014_assert_id_set:"EntityIDs"`
+}
+
+type WorldNextID struct {
+	Unit          int32 `df2014_assert_gte:"-1"`
+	Item          int32 `df2014_assert_gte:"-1"`
+	Entity        int32 `df2014_assert_gte:"-1"`
+	Nemesis       int32 `df2014_assert_gte:"-1"`
+	Artifact      int32 `df2014_assert_gte:"-1"`
+	Building      int32 `df2014_assert_gte:"-1"`
+	HistFigure    int32 `df2014_assert_gte:"-1"`
+	HistEvent     int32 `df2014_assert_gte:"-1"`
+	UnitChunk     int32 `df2014_assert_gte:"-1"`
+	ArtImageChunk int32 `df2014_assert_gte:"-1"`
+	Task          int32 `df2014_assert_gte:"-1"`
 }
 
 type WorldGeneratedRaws struct {
@@ -91,8 +90,8 @@ type WorldStringTables struct {
 	Word              []string
 	Symbol            []string
 	Translation       []string
-	Color             []string `df2014_version_min:"1205"`
-	Shape             []string `df2014_version_min:"1205"`
+	Color             []string `df2014_version_min:"1139"`
+	Shape             []string `df2014_version_min:"1139"`
 	Pattern           []string `df2014_version_min:"1205"`
 	Reaction          []string `df2014_version_min:"1205"`
 	MaterialTemplate  []string `df2014_version_min:"1205"`
@@ -100,21 +99,4 @@ type WorldStringTables struct {
 	BodyDetailPlan    []string `df2014_version_min:"1205"`
 	CreatureVariation []string `df2014_version_min:"1205"`
 	Interaction       []string `df2014_version_min:"1205"`
-}
-
-type WorldDatUnk034 struct {
-	Unk000 uint32
-	Unk001 uint32
-	Unk002 uint32
-	Unk003 uint32
-	Unk004 uint32
-	Unk005 uint32
-	Unk006 uint32
-	Unk007 uint32
-	Unk008 uint32
-	Unk009 uint32
-	Unk010 uint32
-	Unk011 uint32
-	Unk012 uint32
-	Unk013 uint32
 }
