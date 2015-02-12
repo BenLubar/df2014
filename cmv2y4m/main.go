@@ -18,6 +18,7 @@ var (
 	flagBuffer     = flag.Int("b", 0, "number of frames to go ahead")
 	flagTileset    = flag.String("t", "", "path to a tileset")
 	flagSkipHeader = flag.Bool("skip-header", false, "skip the output header and just encode the frames")
+	flagSkipFrames = flag.Int("skip-frames", 0, "")
 )
 
 func main() {
@@ -90,6 +91,13 @@ func Multiplex(movie *df2014.CMVStream, completed chan<- *image.YCbCr, tileset *
 
 	go func() {
 		defer close(input)
+
+		for i := 0; i < *flagSkipFrames; i++ {
+			<-movie.Frames
+			if i%10000 == 9999 {
+				log.Println("skipped", i+1, "/", *flagSkipFrames, "frames")
+			}
+		}
 
 		for frame := range movie.Frames {
 			input <- frame
