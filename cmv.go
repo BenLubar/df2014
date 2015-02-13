@@ -78,68 +78,74 @@ const (
 	ColorWhite
 )
 
-func StreamCMV(in io.ReadCloser, buffer int) (cmv CMVStream, err error) {
-	r := &Reader{bufio.NewReader(in)}
+func RawCMV(r io.Reader) (header CMVHeader, sounds *CMVSounds, frames io.Reader, err error) {
+	in := &Reader{bufio.NewReader(r)}
 
-	err = binary.Read(r, binary.LittleEndian, &cmv.Header.Version)
+	err = binary.Read(in, binary.LittleEndian, &header.Version)
 	if err != nil {
-		in.Close()
 		return
 	}
 
-	if cmv.Header.Version < 10000 || cmv.Header.Version > 10001 {
-		err = fmt.Errorf("df2014: unhandled version %d", cmv.Header.Version)
-		in.Close()
+	if header.Version < 10000 || header.Version > 10001 {
+		err = fmt.Errorf("df2014: unhandled version %d", header.Version)
 		return
 	}
 
-	err = binary.Read(r, binary.LittleEndian, &cmv.Header.Columns)
+	err = binary.Read(in, binary.LittleEndian, &header.Columns)
 	if err != nil {
-		in.Close()
 		return
 	}
 
-	err = binary.Read(r, binary.LittleEndian, &cmv.Header.Rows)
+	err = binary.Read(in, binary.LittleEndian, &header.Rows)
 	if err != nil {
-		in.Close()
 		return
 	}
-
-	size := cmv.Header.Columns * cmv.Header.Rows
 
 	var frameTimeRaw uint32
-	err = binary.Read(r, binary.LittleEndian, &frameTimeRaw)
+	err = binary.Read(in, binary.LittleEndian, &frameTimeRaw)
 	if err != nil {
-		in.Close()
 		return
 	}
-	cmv.Header.FrameTime = time.Duration(frameTimeRaw) * time.Second / 100
+	if frameTimeRaw == 0 {
+		frameTimeRaw = 2
+	}
+	header.FrameTime = time.Duration(frameTimeRaw) * time.Second / 100
 
-	if cmv.Header.Version >= 10001 {
-		cmv.Sounds = new(CMVSounds)
+	if header.Version >= 10001 {
+		sounds = new(CMVSounds)
 
 		var soundsRaw [][50]byte
-		err = r.DecodeSimple(&soundsRaw)
+		err = in.DecodeSimple(&soundsRaw)
 		if err != nil {
-			in.Close()
 			return
 		}
 
 		for _, sound := range soundsRaw {
-			cmv.Sounds.Files = append(cmv.Sounds.Files, string(sound[:bytes.IndexByte(sound[:], 0)]))
+			sounds.Files = append(sounds.Files, string(sound[:bytes.IndexByte(sound[:], 0)]))
 		}
 
-		err = r.DecodeSimple(&cmv.Sounds.Timing)
+		err = in.DecodeSimple(&sounds.Timing)
 		if err != nil {
-			in.Close()
 			return
 		}
 	}
 
-	r.Reader = &compression1Reader{r: r.Reader}
+	in.Reader = &compression1Reader{r: in.Reader}
+	frames = in
+	return
+}
+
+func StreamCMV(in io.ReadCloser, buffer int) (cmv CMVStream, err error) {
+	header, sounds, r, err := RawCMV(in)
+	if err != nil {
+		in.Close()
+		return
+	}
 
 	frames := make(chan CMVFrame, buffer)
-	cmv.Frames = frames
+	cmv.Header, cmv.Sounds, cmv.Frames = header, sounds, frames
+
+	size := cmv.Header.Columns * cmv.Header.Rows
 
 	go func() {
 		defer close(frames)
