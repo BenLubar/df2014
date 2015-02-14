@@ -595,20 +595,18 @@ func (r *Reader) header() (h Header, err error) {
 
 type compression1Reader struct {
 	r   io.Reader
-	buf []byte
+	buf bytes.Buffer
 }
 
-func (r *compression1Reader) Read(p []byte) (n int, err error) {
-	if len(r.buf) == 0 {
+func (r *compression1Reader) Read(b []byte) (n int, err error) {
+	if r.buf.Len() == 0 {
 		err = r.fill()
 		if err != nil {
 			return
 		}
 	}
 
-	n = copy(p, r.buf)
-	r.buf = r.buf[n:]
-	return
+	return r.buf.Read(b)
 }
 
 func (r *compression1Reader) fill() (err error) {
@@ -621,7 +619,6 @@ func (r *compression1Reader) fill() (err error) {
 		return fmt.Errorf("df2014: negative length (%d)", length)
 	}
 
-	var buf bytes.Buffer
 	z, err := zlib.NewReader(io.LimitReader(r.r, int64(length)))
 	if err != nil {
 		return
@@ -633,11 +630,9 @@ func (r *compression1Reader) fill() (err error) {
 		}
 	}()
 
-	_, err = io.Copy(&buf, z)
+	_, err = io.Copy(&r.buf, z)
 	if err != nil {
 		return
 	}
-
-	r.buf = buf.Bytes()
 	return
 }
