@@ -108,7 +108,7 @@ func (f *Frame) Attribute(x, y int) df2014.CMVAttribute {
 
 func (f *Frame) IsTextViewer() bool {
 	cols, rows := int(f.Header.Columns)-1, int(f.Header.Rows)-1
-	for y := 0; y <= rows; y++ {
+	for y := 0; y <= rows-1; y++ {
 		// left side
 		c := f.Character(0, y)
 		a := f.Attribute(0, y)
