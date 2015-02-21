@@ -41,34 +41,34 @@ type WorldDat struct {
 }
 
 type WorldNextID struct {
-	Unit          int32 `df2014_assert_gte:"-1"`
-	Item          int32 `df2014_assert_gte:"-1"`
-	Entity        int32 `df2014_assert_gte:"-1"`
-	Nemesis       int32 `df2014_assert_gte:"-1"`
-	Artifact      int32 `df2014_assert_gte:"-1"`
-	Building      int32 `df2014_assert_gte:"-1"`
-	HistFigure    int32 `df2014_assert_gte:"-1"`
-	HistEvent     int32 `df2014_assert_gte:"-1"`
-	UnitChunk     int32 `df2014_assert_gte:"-1"`
-	ArtImageChunk int32 `df2014_assert_gte:"-1"`
-	Task          int32 `df2014_assert_gte:"-1"`
-	Unk011        int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk012        int32 `df2014_assert_gte:"-1" df2014_version_min:"1254"`
-	Unk013        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
-	Unk014        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
-	Unk015        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
-	Unk016        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
-	Unk017        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
-	Unk018        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
-	Unk019        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
-	Unk020        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
-	Unk021        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
-	Unk022        int32 `df2014_assert_gte:"-1" df2014_version_min:"1400"`
-	Unk023        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
-	Unk024        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
-	Unk025        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
-	Unk026        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
-	Unk027        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unit                int32 `df2014_assert_gte:"-1"`
+	Unit2               int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Item                int32 `df2014_assert_gte:"-1"`
+	Entity              int32 `df2014_assert_gte:"-1"`
+	Nemesis             int32 `df2014_assert_gte:"-1"`
+	Artifact            int32 `df2014_assert_gte:"-1"`
+	Building            int32 `df2014_assert_gte:"-1"`
+	Unk007              int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	HistFigure          int32 `df2014_assert_gte:"-1"`
+	HistEvent           int32 `df2014_assert_gte:"-1"`
+	HistEventCollection int32 `df2014_assert_gte:"-1" df2014_version_min:"1254"`
+	UnitChunk           int32 `df2014_assert_gte:"-1"`
+	ArtImageChunk       int32 `df2014_assert_gte:"-1"`
+	Task                int32 `df2014_assert_gte:"-1"`
+	Squad               int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Schedule            int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Activity            int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	InteractionInstance int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	WrittenContent      int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Identity            int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Incident            int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Crime               int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Vehicle             int32 `df2014_assert_gte:"-1" df2014_version_min:"1400"`
+	Unk023              int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk024              int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk025              int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk026              int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk027              int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
 }
 
 type WorldGeneratedRaws struct {
