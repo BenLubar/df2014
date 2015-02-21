@@ -123,7 +123,7 @@ func (i EntityEthicResponse) prettyPrint(w *WorldDat, buf, indent []byte, outerT
 
 type Entity struct {
 	Type  EntityType
-	ID    uint32
+	ID    int32
 	Class string
 
 	MinTemperature int16 `df2014_version_min:"1131"`

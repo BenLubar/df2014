@@ -168,31 +168,13 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 				}
 			}
 			if tag := fieldTag.Get("df2014_assert_id_set"); tag != "" {
-				want := make(map[interface{}]bool, v.FieldByName(tag).Len())
-				for _, id := range v.FieldByName(tag).MapKeys() {
-					want[id.Interface()] = true
-				}
-
-				have := make(map[interface{}]bool, v.Field(i).Len())
 				for j, l := 0, v.Field(i).Len(); j < l; j++ {
-					have[v.Field(i).Index(j).FieldByName("ID").Interface()] = true
-				}
+					expected := v.FieldByName(tag).Index(j).Int()
+					actual := v.Field(i).Index(j).FieldByName("ID").Int()
 
-				missing := make(map[interface{}]bool)
-				for id := range want {
-					if !have[id] {
-						missing[id] = true
+					if expected != actual {
+						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: id in set (%d) does not match id (%d)", expected, actual)}}
 					}
-				}
-				unexpected := make(map[interface{}]bool)
-				for id := range have {
-					if !want[id] {
-						unexpected[id] = true
-					}
-				}
-
-				if len(missing) > 0 || len(unexpected) > 0 {
-					return fmt.Errorf("df2014: %s: ids missing=%v unexpected=%v", v.Type().Field(i).Name, missing, unexpected)
 				}
 			}
 			if tag := fieldTag.Get("df2014_assert_id_parent"); tag != "" {
@@ -206,11 +188,16 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			}
 			if tag := fieldTag.Get("df2014_assert_next_id"); tag != "" {
 				expected := reflect.ValueOf(world.NextIDs).FieldByName(tag).Int()
+				set := make(map[int64]bool, v.Field(i).Len())
 				for j, l := 0, v.Field(i).Len(); j < l; j++ {
 					actual := v.Field(i).Index(j).Int()
-					if actual <= 0 || actual > expected {
+					if actual < 0 || actual > expected {
 						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: next %s id (%d) is invalid for id (%d)", tag, expected, actual)}}
 					}
+					if set[actual] {
+						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: duplicate %s id (%d)", tag, actual)}}
+					}
+					set[actual] = true
 				}
 			}
 		}

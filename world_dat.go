@@ -26,18 +26,18 @@ type WorldDat struct {
 	GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1287"`
 	StringTables  WorldStringTables
 
-	/*
-		ItemIDs     []int32  `df2014_assert_next_id:"Item"`
-		BuildingIDs []int32  `df2014_assert_next_id:"Building"`
-		EntityIDs   []int32  `df2014_assert_next_id:"Entity"`
-		NemesisIDs  []int32  `df2014_assert_next_id:"Nemesis"`
-		ArtifactIDs []int32  `df2014_assert_next_id:"Artifact"`
-		CoinBatches int32    `df2014_assert_gte:"0"`
-		TaskTypes   []int16
+	STOP struct{} `df2014_assert_equals:"STOP" df2014_version_min:"1205"`
 
-		Items    []Item   `df2014_get_length_from:"ItemIDs" df2014_assert_id_set:"ItemIDs"`
-		Entities []Entity `df2014_get_length_from:"EntityIDs" df2014_assert_id_set:"EntityIDs"`
-	*/
+	ItemIDs     []int32 `df2014_assert_next_id:"Item"`
+	BuildingIDs []int32 `df2014_assert_next_id:"Building"`
+	EntityIDs   []int32 `df2014_assert_next_id:"Entity"`
+	NemesisIDs  []int32 `df2014_assert_next_id:"Nemesis"`
+	ArtifactIDs []int32 `df2014_assert_next_id:"Artifact"`
+	CoinBatches int32   `df2014_assert_gte:"0"`
+	TaskTypes   []int16
+
+	Items    []Item   `df2014_get_length_from:"ItemIDs" df2014_assert_id_set:"ItemIDs"`
+	Entities []Entity `df2014_get_length_from:"EntityIDs" df2014_assert_id_set:"EntityIDs"`
 }
 
 type WorldNextID struct {
