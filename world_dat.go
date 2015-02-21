@@ -8,25 +8,11 @@ type WorldDat struct {
 
 	// SaveSlot is the original region number of this world. A value of 0 means
 	// the save will be titled region1. 1 means region2, and so on.
-	SaveSlot int32 `df2014_assert_gte:"0"`
+	SaveSlot int32 `df2014_assert_gte:"0" df2014_version_max:"1169"`
 
 	NextIDs WorldNextID
 
-	Name   *Name
-	Unk050 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk051 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk052 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk054 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk055 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk056 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk057 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk058 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk059 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk060 int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk061 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk062 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk063 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
-	Unk064 int16 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Name *Name
 
 	// all I know about the next five variables is that they add up to 15 bytes.
 	Unk100 int8  `df2014_assert_equals:"1"`
@@ -37,19 +23,21 @@ type WorldDat struct {
 
 	Title string `df2014_version_min:"1110"`
 
-	//GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1205"`
-	StringTables WorldStringTables
+	GeneratedRaws WorldGeneratedRaws `df2014_version_min:"1287"`
+	StringTables  WorldStringTables
 
-	ItemIDs     map[uint32]bool
-	BuildingIDs map[uint32]bool
-	EntityIDs   map[uint32]bool
-	NemesisIDs  map[uint32]bool
-	ArtifactIDs map[uint32]bool
-	CoinBatches int32 `df2014_assert_gte:"0"`
-	TaskTypes   []int16
+	/*
+		ItemIDs     []int32  `df2014_assert_next_id:"Item"`
+		BuildingIDs []int32  `df2014_assert_next_id:"Building"`
+		EntityIDs   []int32  `df2014_assert_next_id:"Entity"`
+		NemesisIDs  []int32  `df2014_assert_next_id:"Nemesis"`
+		ArtifactIDs []int32  `df2014_assert_next_id:"Artifact"`
+		CoinBatches int32    `df2014_assert_gte:"0"`
+		TaskTypes   []int16
 
-	Items    []Item   `df2014_get_length_from:"ItemIDs" df2014_assert_id_set:"ItemIDs"`
-	Entities []Entity `df2014_get_length_from:"EntityIDs" df2014_assert_id_set:"EntityIDs"`
+		Items    []Item   `df2014_get_length_from:"ItemIDs" df2014_assert_id_set:"ItemIDs"`
+		Entities []Entity `df2014_get_length_from:"EntityIDs" df2014_assert_id_set:"EntityIDs"`
+	*/
 }
 
 type WorldNextID struct {
@@ -64,28 +52,46 @@ type WorldNextID struct {
 	UnitChunk     int32 `df2014_assert_gte:"-1"`
 	ArtImageChunk int32 `df2014_assert_gte:"-1"`
 	Task          int32 `df2014_assert_gte:"-1"`
+	Unk011        int32 `df2014_assert_gte:"-1" df2014_version_min:"1205"`
+	Unk012        int32 `df2014_assert_gte:"-1" df2014_version_min:"1254"`
+	Unk013        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Unk014        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Unk015        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Unk016        int32 `df2014_assert_gte:"-1" df2014_version_min:"1287"`
+	Unk017        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Unk018        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Unk019        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Unk020        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Unk021        int32 `df2014_assert_gte:"-1" df2014_version_min:"1372"`
+	Unk022        int32 `df2014_assert_gte:"-1" df2014_version_min:"1400"`
+	Unk023        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk024        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk025        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk026        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
+	Unk027        int32 `df2014_assert_gte:"-1" df2014_version_min:"1441"`
 }
 
 type WorldGeneratedRaws struct {
-	Inorganic   [][]string
-	Unk000      [][]string
-	Item        [][]string
+	Inorganic   [][]string `df2014_version_min:"1372"`
+	Unk000      [][]string `df2014_version_min:"1400"`
+	Item        [][]string `df2014_version_min:"1441"`
 	Creature    [][]string
-	Entity      [][]string
-	Interaction [][]string
-	Language    [][]string
+	Entity      [][]string `df2014_version_min:"1441"`
+	Interaction [][]string `df2014_version_min:"1372"`
+	Language    [][]string `df2014_version_min:"1441"`
 }
 
 type WorldStringTables struct {
-	Tree              []string `df2014_version_max:"1169"`
+	Tree              []string `df2014_version_max:"1268"`
 	Inorganic         []string
 	Gem               []string `df2014_version_max:"1169"`
+	Metal             []string `df2014_version_min:"1205" df2014_version_max:"1268"`
 	Plant             []string
 	Body              []string
 	BodyGloss         []string
 	Creature          []string
 	Item              []string
-	Building          []string `df2014_version_min:"1205"`
+	Building          []string `df2014_version_min:"1287"`
 	Entity            []string
 	Word              []string
 	Symbol            []string
@@ -93,10 +99,10 @@ type WorldStringTables struct {
 	Color             []string `df2014_version_min:"1139"`
 	Shape             []string `df2014_version_min:"1139"`
 	Pattern           []string `df2014_version_min:"1205"`
-	Reaction          []string `df2014_version_min:"1205"`
-	MaterialTemplate  []string `df2014_version_min:"1205"`
-	TissueTemplate    []string `df2014_version_min:"1205"`
-	BodyDetailPlan    []string `df2014_version_min:"1205"`
-	CreatureVariation []string `df2014_version_min:"1205"`
-	Interaction       []string `df2014_version_min:"1205"`
+	Reaction          []string `df2014_version_min:"1287"`
+	MaterialTemplate  []string `df2014_version_min:"1287"`
+	TissueTemplate    []string `df2014_version_min:"1287"`
+	BodyDetailPlan    []string `df2014_version_min:"1287"`
+	CreatureVariation []string `df2014_version_min:"1287"`
+	Interaction       []string `df2014_version_min:"1287"`
 }

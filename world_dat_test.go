@@ -303,6 +303,25 @@ func TestWorldDat_40_18(t *testing.T) {
 func TestWorldDat_40_19(t *testing.T) {
 	testWorldDat(t, "work/df_40_19/data/save/region1/world.dat")
 }
+func TestWorldDat_40_20(t *testing.T) {
+	testWorldDat(t, "work/df_40_20/data/save/region1/world.dat")
+}
+func TestWorldDat_40_21(t *testing.T) {
+	testWorldDat(t, "work/df_40_21/data/save/region1/world.dat")
+}
+func TestWorldDat_40_22(t *testing.T) {
+	testWorldDat(t, "work/df_40_22/data/save/region1/world.dat")
+}
+func TestWorldDat_40_23(t *testing.T) {
+	testWorldDat(t, "work/df_40_23/data/save/region1/world.dat")
+}
+func TestWorldDat_40_24(t *testing.T) {
+	testWorldDat(t, "work/df_40_24/data/save/region1/world.dat")
+}
+
+func TestWorldDat_region2(t *testing.T) {
+	testWorldDat(t, "work/region2/world.dat")
+}
 
 func testWorldDat(t *testing.T, fn string) {
 	t.Log(fn)

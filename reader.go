@@ -102,26 +102,26 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 				}
 			}
 
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_same_length_as"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_same_length_as"); tag != "" {
 				expected, actual := v.FieldByName(tag).Len(), v.Field(i).Len()
 				if expected != actual {
 					return fmt.Errorf("df2014: len(%s) %d != len(%s) %d", v.Type().Field(i).Name, actual, tag, expected)
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_same_as"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_same_as"); tag != "" {
 				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
 				expected := fmt.Sprintf("%#v", v.FieldByName(tag).Interface())
 				if expected != actual {
 					return fmt.Errorf("df2014: %s %q != %s %q", v.Type().Field(i).Name, actual, tag, expected)
 				}
 			}
-			if expected := v.Type().Field(i).Tag.Get("df2014_assert_equals"); expected != "" {
+			if expected := fieldTag.Get("df2014_assert_equals"); expected != "" {
 				actual := fmt.Sprintf("%#v", v.Field(i).Interface())
 				if expected != actual {
 					return fmt.Errorf("df2014: %s: %q != %q", v.Type().Field(i).Name, actual, expected)
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_gte"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_gte"); tag != "" {
 				switch v.Field(i).Kind() {
 				case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					actual := v.Field(i).Int()
@@ -144,7 +144,7 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 					}
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_lte"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_lte"); tag != "" {
 				switch v.Field(i).Kind() {
 				case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					actual := v.Field(i).Int()
@@ -167,7 +167,7 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 					}
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_id_set"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_id_set"); tag != "" {
 				want := make(map[interface{}]bool, v.FieldByName(tag).Len())
 				for _, id := range v.FieldByName(tag).MapKeys() {
 					want[id.Interface()] = true
@@ -195,12 +195,21 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 					return fmt.Errorf("df2014: %s: ids missing=%v unexpected=%v", v.Type().Field(i).Name, missing, unexpected)
 				}
 			}
-			if tag := v.Type().Field(i).Tag.Get("df2014_assert_id_parent"); tag != "" {
+			if tag := fieldTag.Get("df2014_assert_id_parent"); tag != "" {
 				expected := v.FieldByName("ID").Uint()
 				for j, l := 0, v.Field(i).Len(); j < l; j++ {
 					actual := v.Field(i).Index(j).FieldByName(tag).Uint()
 					if expected != actual {
 						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: id in parent (%d) does not match id in %s (%d)", expected, tag, actual)}}
+					}
+				}
+			}
+			if tag := fieldTag.Get("df2014_assert_next_id"); tag != "" {
+				expected := reflect.ValueOf(world.NextIDs).FieldByName(tag).Int()
+				for j, l := 0, v.Field(i).Len(); j < l; j++ {
+					actual := v.Field(i).Index(j).Int()
+					if actual <= 0 || actual > expected {
+						return NestedError{fmt.Sprintf("in struct field %q", v.Type().Field(i).Name), NestedError{fmt.Sprintf("at index %d", j), fmt.Errorf("df2014: next %s id (%d) is invalid for id (%d)", tag, expected, actual)}}
 					}
 				}
 			}
@@ -300,46 +309,23 @@ func (r *Reader) DecodeValue(world *WorldDat, v reflect.Value) (err error) {
 			return nil
 		}
 
-		if v.Type().Elem().Kind() == reflect.Bool {
-			// it's a set
-			trueVal := reflect.New(v.Type().Elem()).Elem()
-			trueVal.SetBool(true)
+		for i := int32(0); i < length; i++ {
+			key := reflect.New(v.Type().Key()).Elem()
+			val := reflect.New(v.Type().Elem()).Elem()
 
-			for i := int32(0); i < length; i++ {
-				key := reflect.New(v.Type().Key()).Elem()
-
-				r.DecodeValue(world, key)
-				if err != nil {
-					return err
-				}
-
-				v.SetMapIndex(key, trueVal)
-
-				if err = check(key); err != nil {
-					return err
-				}
+			err = r.DecodeValue(world, key)
+			if err != nil {
+				return err
 			}
-		} else {
-			// it's a mapping
+			err = r.DecodeValue(world, val)
+			if err != nil {
+				return err
+			}
 
-			for i := int32(0); i < length; i++ {
-				key := reflect.New(v.Type().Key()).Elem()
-				val := reflect.New(v.Type().Elem()).Elem()
+			v.SetMapIndex(key, val)
 
-				err = r.DecodeValue(world, key)
-				if err != nil {
-					return err
-				}
-				err = r.DecodeValue(world, val)
-				if err != nil {
-					return err
-				}
-
-				v.SetMapIndex(key, val)
-
-				if err = check(key); err != nil {
-					return err
-				}
+			if err = check(key); err != nil {
+				return err
 			}
 		}
 		return nil
@@ -364,7 +350,7 @@ func (r *Reader) bool() (b bool, err error) {
 	return
 }
 
-var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\xA0")
+var cp437 = []rune("\x00☺☻♥♦♣♠•◘○◙♂♀♪♬☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u00A0")
 
 func (r *Reader) string() (string, error) {
 	var length int16 // signed so huge numbers cause errors instead of allocating tons of memory
@@ -495,6 +481,11 @@ var saveVersions = map[SaveVersion]string{
 	1472: "0.40.17",
 	1473: "0.40.18",
 	1474: "0.40.19",
+	1477: "0.40.20",
+	1478: "0.40.21",
+	1479: "0.40.22",
+	1480: "0.40.23",
+	1481: "0.40.24",
 }
 
 func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
