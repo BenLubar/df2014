@@ -490,6 +490,14 @@ func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte, outerTag refle
 	return buf
 }
 
+func (i SaveVersion) String() string {
+	if v, ok := saveVersions[i]; ok {
+		return v
+	}
+
+	return strconv.FormatUint(uint64(i), 10)
+}
+
 type CompressionType uint32
 
 const (
@@ -509,6 +517,14 @@ var compressionTypeNames = []string{
 
 func (i CompressionType) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
 	return prettyPrintIndex(int64(i), uint64(i), compressionTypeNames, buf)
+}
+
+func (i CompressionType) String() string {
+	if i < CompressionType(len(compressionTypeNames)) {
+		return compressionTypeNames[i]
+	}
+
+	return strconv.FormatUint(uint64(i), 10)
 }
 
 type Header struct {
@@ -572,8 +588,10 @@ func (r *Reader) header() (h Header, err error) {
 }
 
 type compression1Reader struct {
-	r   io.Reader
-	buf bytes.Buffer
+	r    io.Reader
+	buf  bytes.Buffer
+	nlen []byte
+	next []byte
 }
 
 func (r *compression1Reader) Read(b []byte) (n int, err error) {
@@ -588,16 +606,32 @@ func (r *compression1Reader) Read(b []byte) (n int, err error) {
 }
 
 func (r *compression1Reader) fill() (err error) {
-	var length int32 // signed so huge numbers cause errors instead of allocating tons of memory
-	err = binary.Read(r.r, binary.LittleEndian, &length)
-	if err != nil {
-		return
+	var n int
+	if r.next == nil {
+		if r.nlen == nil {
+			r.nlen = make([]byte, 0, 4)
+		}
+		n, err = io.ReadFull(r.r, r.nlen[len(r.nlen):cap(r.nlen)])
+		r.nlen = r.nlen[:len(r.nlen)+n]
+		if err != nil {
+			return
+		}
+		length := int32(binary.LittleEndian.Uint32(r.nlen))
+		if length < 0 {
+			return fmt.Errorf("df2014: negative length (%d)", length)
+		}
+		r.next = make([]byte, 0, length)
+		r.nlen = r.nlen[:0]
 	}
-	if length < 0 {
-		return fmt.Errorf("df2014: negative length (%d)", length)
+	if len(r.next) != cap(r.next) {
+		n, err = io.ReadFull(r.r, r.next[len(r.next):cap(r.next)])
+		r.next = r.next[:len(r.next)+n]
+		if err != nil {
+			return
+		}
 	}
 
-	z, err := zlib.NewReader(io.LimitReader(r.r, int64(length)))
+	z, err := zlib.NewReader(bytes.NewReader(r.next))
 	if err != nil {
 		return
 	}
@@ -612,5 +646,6 @@ func (r *compression1Reader) fill() (err error) {
 	if err != nil {
 		return
 	}
+	r.next = nil
 	return
 }
