@@ -473,6 +473,10 @@ var saveVersions = map[SaveVersion]string{
 	1479: "0.40.22",
 	1480: "0.40.23",
 	1481: "0.40.24",
+
+	1531: "0.42.01",
+	1532: "0.42.02",
+	1533: "0.42.03",
 }
 
 func (i SaveVersion) prettyPrint(w *WorldDat, buf, indent []byte, outerTag reflect.StructTag) []byte {
