@@ -54,10 +54,13 @@ func readStringList(r io.Reader, f func(int, byte) byte) ([]string, error) {
 	return l, nil
 }
 
+// ReadStringList reads the format used by Dwarf Fortress's announcement,
+// dipscript, and help files.
 func ReadStringList(r io.Reader) ([]string, error) {
 	return readStringList(r, nil)
 }
 
+// ReadStringListIndex reads the format used by Dwarf Fortress's index file.
 func ReadStringListIndex(r io.Reader) ([]string, error) {
 	return readStringList(r, func(i int, b byte) byte {
 		return ^b - byte(i%5)

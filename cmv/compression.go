@@ -7,16 +7,19 @@ import (
 	"io"
 )
 
-type Compression1Reader struct {
+type compression1Reader struct {
 	r io.Reader
 	z io.ReadCloser // also implements zlib.Resetter
 }
 
+// NewCompression1Reader wraps an io.Reader to decode Dwarf Fortress's chunked
+// zlib format. The format consists of a stream of a uint32 length followed by
+// that many bytes of compressed data.
 func NewCompression1Reader(r io.Reader) io.Reader {
-	return &Compression1Reader{r: r}
+	return &compression1Reader{r: r}
 }
 
-func (r *Compression1Reader) Read(b []byte) (int, error) {
+func (r *compression1Reader) Read(b []byte) (int, error) {
 	if r.z == nil {
 		l, err := r.readLength()
 		if err != nil {
@@ -49,23 +52,27 @@ func (r *Compression1Reader) Read(b []byte) (int, error) {
 	return n, err
 }
 
-func (r *Compression1Reader) readLength() (int64, error) {
+func (r *compression1Reader) readLength() (int64, error) {
 	var n uint32
 	err := binary.Read(r.r, binary.LittleEndian, &n)
 	return int64(n), err
 }
 
-type Compression1Writer struct {
+type compression1Writer struct {
 	w io.Writer
 	b bytes.Buffer
 	z *zlib.Writer
 }
 
+// NewCompression1Writer wraps an io.Writer to output Dwarf Fortress's chunked
+// zlib format. Each call to Write outputs its own frame, so the returned
+// io.Writer should be wrapped in bufio.NewWriter if there will be many small
+// writes.
 func NewCompression1Writer(w io.Writer) io.Writer {
-	return &Compression1Writer{w: w}
+	return &compression1Writer{w: w}
 }
 
-func (w *Compression1Writer) Write(b []byte) (int, error) {
+func (w *compression1Writer) Write(b []byte) (int, error) {
 	w.b.Reset()
 
 	if w.z == nil {

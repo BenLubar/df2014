@@ -47,10 +47,13 @@ func writeStringList(w io.Writer, l []string, f func(int, byte) byte) error {
 	return bw.Flush()
 }
 
+// WriteStringList writes the format used by Dwarf Fortress's announcement,
+// dipscript, and help files.
 func WriteStringList(w io.Writer, l []string) error {
 	return writeStringList(w, l, nil)
 }
 
+// WriteStringListIndex writes the format used by Dwarf Fortress's index file.
 func WriteStringListIndex(w io.Writer, l []string) error {
 	return writeStringList(w, l, func(i int, b byte) byte {
 		return ^b - byte(i%5)
