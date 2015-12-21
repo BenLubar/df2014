@@ -10,6 +10,8 @@ type reader struct {
 	b bytes.Buffer
 }
 
+// NewReader returns an io.Reader that reads from r and converts CP437-encoded
+// data to UTF-8-encoded data.
 func NewReader(r io.Reader) io.Reader {
 	return &reader{r: r}
 }
