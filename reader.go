@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/BenLubar/df2014/versions"
+	"github.com/BenLubar/df2014/wtf23a"
 )
 
 const MaxAlloc = 1 << 30 // allocations over 1 gigabyte are probably mistakes.
@@ -422,7 +423,7 @@ func (r *Reader) header() (h Header, err error) {
 			h.Compression = Special40d
 		} else {
 			// guess 23a compression
-			r.Reader = &wtf23aReader{r: io.MultiReader(&undo, r.Reader)}
+			r.Reader = wtf23a.NewReader(io.MultiReader(&undo, r.Reader))
 			h.Compression = Special23a
 		}
 		err = binary.Read(r, binary.LittleEndian, &h.Version)
@@ -438,7 +439,7 @@ func (r *Reader) header() (h Header, err error) {
 		if err != nil {
 			panic(err)
 		}
-		r.Reader = &wtf23aReader{r: io.MultiReader(&undo, r.Reader)}
+		r.Reader = wtf23a.NewReader(io.MultiReader(&undo, r.Reader))
 		h.Compression = Special23a
 		err = binary.Read(r, binary.LittleEndian, &h.Version)
 		if err != nil {
