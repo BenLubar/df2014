@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+
+	"github.com/BenLubar/df2014/versions"
 )
 
 type prettyPrinter interface {
@@ -44,7 +46,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte, outerTag refl
 					panic(err)
 				}
 
-				if w.Version < SaveVersion(expected) {
+				if w.Version < versions.Version(expected) {
 					continue
 				}
 			}
@@ -54,7 +56,7 @@ func prettyPrint(w *WorldDat, v reflect.Value, buf, indent []byte, outerTag refl
 					panic(err)
 				}
 
-				if w.Version > SaveVersion(expected) {
+				if w.Version > versions.Version(expected) {
 					continue
 				}
 			}
