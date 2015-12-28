@@ -13,6 +13,8 @@ type writer struct {
 	h func() Header
 }
 
+// NewWriter wraps an io.Writer to output Dwarf Fortress 23a's obfuscated file
+// encoding. ZeroHeader and RandomHeader(r) are predefined header generators.
 func NewWriter(w io.Writer, generateHeader func() Header) io.Writer {
 	return &writer{w: w, h: generateHeader}
 }
@@ -25,7 +27,7 @@ func (w *writer) Write(b []byte) (int, error) {
 
 	initial := w.h()
 	if initial.Index > uint32(len(initial.State)) {
-		return 0, ErrInvalid
+		return 0, ErrInvalidIndex
 	}
 
 	var buf bytes.Buffer

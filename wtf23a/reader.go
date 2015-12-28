@@ -17,6 +17,8 @@ type reader struct {
 	buf []byte
 }
 
+// NewReader wraps an io.Reader to decode Dwarf Fortress 23a's obfuscated file
+// encoding.
 func NewReader(r io.Reader) io.Reader {
 	return &reader{r: r}
 }
@@ -82,9 +84,11 @@ func (r *reader) fill() (err error) {
 	if err != nil {
 		return
 	}
-	defer z.Close()
 
 	r.buf, err = ioutil.ReadAll(z)
+	if e := z.Close(); err == nil {
+		err = e
+	}
 
 	return
 }

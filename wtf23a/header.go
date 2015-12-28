@@ -6,13 +6,17 @@ import (
 	"io"
 )
 
+// Header is the header used to store the initial state of a wtf23a segment.
 type Header struct {
 	State [624]uint32
 	Index uint32
 }
 
-var ErrInvalid = errors.New("wtf23a: invalid header")
+// ErrInvalidIndex is returned if a header has an index greater than the size
+// of the state array or is not an integer.
+var ErrInvalidIndex = errors.New("wtf23a: invalid header index")
 
+// ReadHeader reads a Header from an io.Reader.
 func ReadHeader(r io.Reader) (Header, error) {
 	var h Header
 
@@ -21,18 +25,19 @@ func ReadHeader(r io.Reader) (Header, error) {
 	}
 
 	if h.Index%4 != 0 {
-		return h, ErrInvalid
+		return h, ErrInvalidIndex
 	}
 
 	h.Index /= 4
 
 	if h.Index > uint32(len(h.State)) {
-		return h, ErrInvalid
+		return h, ErrInvalidIndex
 	}
 
 	return h, nil
 }
 
+// Next returns the next value. It modifies the State and Index of the Header.
 func (h *Header) Next() uint32 {
 	if h.Index == uint32(len(h.State)) {
 		for i := range h.State {
