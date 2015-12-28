@@ -26,7 +26,12 @@ func (r *reader) Read(b []byte) (n int, err error) {
 		return
 	}
 	for _, c := range b[:n] {
-		r.b.WriteRune(Rune(c))
+		_, err = r.b.WriteRune(Rune(c))
+		if err != nil {
+			// bytes.Buffer should never return an error, but just
+			// in case.
+			panic(err)
+		}
 	}
 	return r.b.Read(b)
 }
