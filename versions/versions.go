@@ -2,8 +2,11 @@ package versions
 
 import "strconv"
 
+// Version is the ID of a Dwarf Fortress save version.
 type Version uint32
 
+// Versions is a map of all known save versions to the corresponding release's
+// version number.
 var Versions = map[Version]string{
 	1107: "0.21.93.19a",
 	1108: "0.21.93.19c",
@@ -119,6 +122,13 @@ var Versions = map[Version]string{
 	1534: "0.42.04",
 }
 
+// IsKnown returns true if v is a known version number.
+func (v Version) IsKnown() bool {
+	_, ok := Versions[v]
+	return ok
+}
+
+// String implements fmt.Stringer.
 func (v Version) String() string {
 	if s, ok := Versions[v]; ok {
 		return s

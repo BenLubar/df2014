@@ -447,7 +447,7 @@ func (r *Reader) header() (h Header, err error) {
 		}
 	}
 
-	if _, ok := versions.Versions[h.Version]; !ok {
+	if !h.Version.IsKnown() {
 		err = fmt.Errorf("df2014: unhandled version %d", h.Version)
 		return
 	}
