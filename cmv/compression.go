@@ -19,43 +19,45 @@ func NewCompression1Reader(r io.Reader) io.Reader {
 	return &compression1Reader{r: r}
 }
 
-func (r *compression1Reader) Read(b []byte) (int, error) {
+func (r *compression1Reader) Read(b []byte) (n int, err error) {
 	if r.z == nil {
-		l, err := r.readLength()
-		if err != nil {
-			return 0, err
-		}
-
-		r.z, err = zlib.NewReader(io.LimitReader(r.r, l))
-		if err != nil {
-			return 0, err
+		if err = r.fill(); err != nil {
+			return
 		}
 	}
-	n, err := r.z.Read(b)
+	n, err = r.z.Read(b)
+
 	if err == io.EOF {
 		if n != 0 {
-			return n, nil
+			err = nil
+			return
 		}
 
-		l, err := r.readLength()
-		if err != nil {
-			return 0, err
-		}
-
-		err = r.z.(zlib.Resetter).Reset(io.LimitReader(r.r, l), nil)
-		if err != nil {
-			return 0, err
+		if err = r.fill(); err != nil {
+			return
 		}
 
 		return r.z.Read(b)
 	}
-	return n, err
+
+	return
 }
 
-func (r *compression1Reader) readLength() (int64, error) {
-	var n uint32
-	err := binary.Read(r.r, binary.LittleEndian, &n)
-	return int64(n), err
+func (r *compression1Reader) fill() error {
+	var length uint32
+	err := binary.Read(r.r, binary.LittleEndian, &length)
+	if err != nil {
+		return err
+	}
+
+	section := io.LimitReader(r.r, int64(length))
+	if r.z == nil {
+		r.z, err = zlib.NewReader(section)
+	} else {
+		err = r.z.(zlib.Resetter).Reset(section, nil)
+	}
+
+	return err
 }
 
 type compression1Writer struct {
