@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BenLubar/df2014"
+	"github.com/BenLubar/df2014/cmv"
+	"github.com/nsf/termbox-go"
 )
 
 func main() {
@@ -18,39 +19,47 @@ func main() {
 		if flag.NArg() != 1 {
 			fmt.Println("==>", fn, "<==")
 		}
-		process(fn)
+		if err := process(fn); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 	}
 }
 
-func process(fn string) {
+func process(fn string) (err error) {
 	f, err := os.Open(fn)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if e := f.Close(); err == nil {
+			err = e
+		}
+	}()
 
-	header, _, r, err := df2014.RawCMV(f)
+	r, err := cmv.NewReader(f)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 
-	frame := &Frame{Header: header}
+	index := 0
 	prevTitle, prevBody, prevBox := "", "", ""
 	for {
-		if _, err := frame.ReadFrom(r); err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Fprintf(os.Stderr, "%s (near frame %d)\n", err, frame.Index)
-			return
+		var frame *cmv.Frame
+		frame, err = r.Frame()
+		if err == io.EOF {
+			err = nil
+			break
 		}
+		if err != nil {
+			return fmt.Errorf("%s (near frame %d)\n", err, index)
+		}
+		index++
 
-		if frame.IsTextViewer() {
-			title, body := frame.TranscribeTextViewer()
+		if isTextViewer(frame) {
+			title, body := transcribeTextViewer(frame)
 			if title != prevTitle || body != prevBody {
-				fmt.Println(frame.Timestamp())
+				fmt.Println(time.Duration(index) * r.FrameTime())
 				fmt.Println(title)
 				fmt.Println(body)
 				fmt.Println()
@@ -60,10 +69,10 @@ func process(fn string) {
 			prevTitle, prevBody = "", ""
 		}
 
-		if x1, y1, x2, y2, ok := frame.IsMegaBox(); ok {
-			box := frame.TranscribeMegaBox(x1, y1, x2, y2)
+		if x1, y1, x2, y2, ok := isMegaBox(frame); ok {
+			box := transcribeMegaBox(frame, x1, y1, x2, y2)
 			if box != prevBox {
-				fmt.Println(frame.Timestamp())
+				fmt.Println(time.Duration(index) * r.FrameTime())
 				fmt.Println(box)
 				fmt.Println()
 				prevBox = box
@@ -73,80 +82,55 @@ func process(fn string) {
 		}
 	}
 
-	fmt.Println(frame.Timestamp())
-}
-
-type Frame struct {
-	Index  int
-	Header df2014.CMVHeader
-	Data   []byte
-}
-
-func (f *Frame) Timestamp() time.Duration {
-	return f.Header.FrameTime * time.Duration(f.Index)
-}
-
-func (f *Frame) ReadFrom(r io.Reader) (n int64, err error) {
-	if f.Data == nil {
-		f.Data = make([]byte, f.Header.Columns*f.Header.Rows*2)
-	}
-	n_, err := io.ReadFull(r, f.Data)
-	n = int64(n_)
-	if err == nil {
-		f.Index++
-	}
+	fmt.Println(time.Duration(index) * r.FrameTime())
 	return
 }
 
-func (f *Frame) Character(x, y int) df2014.CMVCharacter {
-	return df2014.CMVCharacter(f.Data[x*int(f.Header.Rows)+y])
-}
-
-func (f *Frame) Attribute(x, y int) df2014.CMVAttribute {
-	return df2014.CMVAttribute(f.Data[(int(f.Header.Columns)+x)*int(f.Header.Rows)+y])
-}
-
-func (f *Frame) IsTextViewer() bool {
-	cols, rows := int(f.Header.Columns)-1, int(f.Header.Rows)-1
+func isTextViewer(f *cmv.Frame) bool {
+	cols, rows := f.Width()-1, f.Height()-1
 	for y := 0; y <= rows-1; y++ {
 		// left side
-		c := f.Character(0, y)
-		a := f.Attribute(0, y)
-		if c.Rune() != '█' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+		if f.Rune(0, y) != '█' ||
+			f.Fg(0, y) != termbox.ColorBlack|termbox.AttrBold ||
+			f.Bg(0, y) != termbox.ColorBlack {
 			return false
 		}
 
 		// right side
-		c = f.Character(cols, y)
-		a = f.Attribute(cols, y)
-		if c.Rune() != '█' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+		if f.Rune(cols, y) != '█' ||
+			f.Fg(cols, y) != termbox.ColorBlack|termbox.AttrBold ||
+			f.Bg(cols, y) != termbox.ColorBlack {
 			return false
 		}
 	}
 
-	rec := f.Character(cols-2, rows).Rune() == 'R'
+	rec := f.Rune(cols-2, rows) == 'R'
 	startedTitle, endedTitle := false, false
 	for x := 0; x <= cols; x++ {
 		// bottom
-		c := f.Character(x, rows)
-		a := f.Attribute(x, rows)
 		if rec && x > cols-3 {
-			if c.Rune() != []rune{'R', 'E', 'C'}[x-cols+2] || a.Fg() != df2014.ColorLRed || a.Bg() != df2014.ColorRed {
+			if f.Rune(x, rows) != []rune{'R', 'E', 'C'}[x-cols+2] ||
+				f.Fg(x, rows) != termbox.ColorRed|termbox.AttrBold ||
+				f.Bg(x, rows) != termbox.ColorRed {
 				return false
 			}
-		} else if c.Rune() != '█' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+		} else if f.Rune(x, rows) != '█' ||
+			f.Fg(x, rows) != termbox.ColorBlack|termbox.AttrBold ||
+			f.Bg(x, rows) != termbox.ColorBlack {
 			return false
 		}
 
 		// top
-		c = f.Character(x, 0)
-		a = f.Attribute(x, 0)
-		if c.Rune() != '█' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+		if f.Rune(x, 0) != '█' ||
+			f.Fg(x, 0) != termbox.ColorBlack|termbox.AttrBold ||
+			f.Bg(x, 0) != termbox.ColorBlack {
 			if endedTitle {
 				return false
 			}
 			startedTitle = true
-			if c.Rune() == 0 || a.Fg() != df2014.ColorBlack || a.Bg() != df2014.ColorLGray {
+			if f.Rune(x, 0) == 0 ||
+				f.Fg(x, 0) != termbox.ColorBlack ||
+				f.Bg(x, 0) != termbox.ColorWhite {
 				return false
 			}
 		} else if startedTitle {
@@ -160,8 +144,9 @@ func (f *Frame) IsTextViewer() bool {
 	// body
 	for x := 1; x <= cols-1; x++ {
 		for y := 1; y <= rows-1; y++ {
-			a := f.Attribute(x, y)
-			if (a.Fg() != df2014.ColorLGray && a.Fg() != df2014.ColorBlack) || a.Bg() != df2014.ColorBlack {
+			if (f.Fg(x, y) != termbox.ColorWhite &&
+				f.Fg(x, y) != termbox.ColorBlack) ||
+				f.Bg(x, y) != termbox.ColorBlack {
 				return false
 			}
 		}
@@ -170,16 +155,14 @@ func (f *Frame) IsTextViewer() bool {
 	return true
 }
 
-func (f *Frame) TranscribeTextViewer() (title string, body string) {
-	cols, rows := int(f.Header.Columns)-1, int(f.Header.Rows)-1
+func transcribeTextViewer(f *cmv.Frame) (title, body string) {
+	cols, rows := f.Width()-1, f.Height()-1
 
 	var buf []rune
 
-	buf = buf[:0]
 	for x := 0; x <= cols; x++ {
-		c := f.Character(x, 0)
-		if c.Rune() != '█' && c.Rune() != 0 {
-			buf = append(buf, c.Rune())
+		if ch := f.Rune(x, 0); ch != '█' && ch != 0 {
+			buf = append(buf, ch)
 		}
 	}
 	title = strings.TrimSpace(string(buf))
@@ -188,11 +171,9 @@ func (f *Frame) TranscribeTextViewer() (title string, body string) {
 	for y := 1; y <= rows-1; y++ {
 		var last int
 		for x := 1; x <= cols-1; x++ {
-			c := f.Character(x, y)
-
-			if c.Rune() != 0 {
-				if c.Rune() != ' ' || len(buf) == 0 || buf[len(buf)-1] != ' ' {
-					buf = append(buf, c.Rune())
+			if ch := f.Rune(x, y); ch != 0 {
+				if ch != ' ' || len(buf) == 0 || buf[len(buf)-1] != ' ' {
+					buf = append(buf, ch)
 				}
 				last = x
 			}
@@ -210,38 +191,38 @@ func (f *Frame) TranscribeTextViewer() (title string, body string) {
 
 var megaBoxBottom = []struct {
 	Rune   rune
-	Fg, Bg df2014.CMVColor
+	Fg, Bg termbox.Attribute
 }{
-	{'P', df2014.ColorWhite, df2014.ColorBlack},
-	{'r', df2014.ColorWhite, df2014.ColorBlack},
-	{'e', df2014.ColorWhite, df2014.ColorBlack},
-	{'s', df2014.ColorWhite, df2014.ColorBlack},
-	{'s', df2014.ColorWhite, df2014.ColorBlack},
-	{' ', df2014.ColorWhite, df2014.ColorBlack},
-	{'E', df2014.ColorLGreen, df2014.ColorBlack},
-	{'n', df2014.ColorLGreen, df2014.ColorBlack},
-	{'t', df2014.ColorLGreen, df2014.ColorBlack},
-	{'e', df2014.ColorLGreen, df2014.ColorBlack},
-	{'r', df2014.ColorLGreen, df2014.ColorBlack},
-	{' ', df2014.ColorWhite, df2014.ColorBlack},
-	{'t', df2014.ColorWhite, df2014.ColorBlack},
-	{'o', df2014.ColorWhite, df2014.ColorBlack},
-	{' ', df2014.ColorWhite, df2014.ColorBlack},
-	{'c', df2014.ColorWhite, df2014.ColorBlack},
-	{'l', df2014.ColorWhite, df2014.ColorBlack},
-	{'o', df2014.ColorWhite, df2014.ColorBlack},
-	{'s', df2014.ColorWhite, df2014.ColorBlack},
-	{'e', df2014.ColorWhite, df2014.ColorBlack},
-	{' ', df2014.ColorWhite, df2014.ColorBlack},
-	{'w', df2014.ColorWhite, df2014.ColorBlack},
-	{'i', df2014.ColorWhite, df2014.ColorBlack},
-	{'n', df2014.ColorWhite, df2014.ColorBlack},
-	{'d', df2014.ColorWhite, df2014.ColorBlack},
-	{'o', df2014.ColorWhite, df2014.ColorBlack},
-	{'w', df2014.ColorWhite, df2014.ColorBlack},
+	{'P', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'r', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'e', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'s', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'s', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{' ', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'E', termbox.ColorGreen | termbox.AttrBold, termbox.ColorBlack},
+	{'n', termbox.ColorGreen | termbox.AttrBold, termbox.ColorBlack},
+	{'t', termbox.ColorGreen | termbox.AttrBold, termbox.ColorBlack},
+	{'e', termbox.ColorGreen | termbox.AttrBold, termbox.ColorBlack},
+	{'r', termbox.ColorGreen | termbox.AttrBold, termbox.ColorBlack},
+	{' ', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'t', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'o', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{' ', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'c', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'l', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'o', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'s', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'e', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{' ', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'w', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'i', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'n', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'d', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'o', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
+	{'w', termbox.ColorWhite | termbox.AttrBold, termbox.ColorBlack},
 }
 
-func (f *Frame) IsMegaBox() (x1, y1, x2, y2 int, ok bool) {
+func isMegaBox(f *cmv.Frame) (x1, y1, x2, y2 int, ok bool) {
 	// ╔══════════════════════════════════╗ - border is fg:dgray bg:black
 	// ║                                  ║ - inside is bg:black
 	// ║                                  ║ - Press, to, close, window are
@@ -258,23 +239,25 @@ func (f *Frame) IsMegaBox() (x1, y1, x2, y2 int, ok bool) {
 
 		// right side
 		for y := y1 + 1; y < y2; y++ {
-			c := f.Character(x2, y)
-			a := f.Attribute(x2, y)
-			if c.Rune() != '║' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+			if f.Rune(x2, y) != '║' ||
+				f.Fg(x2, y) != termbox.ColorBlack|termbox.AttrBold ||
+				f.Bg(x2, y) != termbox.ColorBlack {
 				return false
 			}
 		}
 
 		// bottom
 		for x := x1 + 1; x < x2; x++ {
-			c := f.Character(x, y2)
-			a := f.Attribute(x, y2)
 			if i := x - x1 - 2; i >= 0 && i < len(megaBoxBottom) {
-				if c.Rune() != megaBoxBottom[i].Rune || a.Fg() != megaBoxBottom[i].Fg || a.Bg() != megaBoxBottom[i].Bg {
+				if f.Rune(x, y2) != megaBoxBottom[i].Rune ||
+					f.Fg(x, y2) != megaBoxBottom[i].Fg ||
+					f.Bg(x, y2) != megaBoxBottom[i].Bg {
 					return false
 				}
 			} else {
-				if c.Rune() != '═' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+				if f.Rune(x, y2) != '═' ||
+					f.Fg(x, y2) != termbox.ColorBlack|termbox.AttrBold ||
+					f.Bg(x, y2) != termbox.ColorBlack {
 					return false
 				}
 			}
@@ -283,45 +266,41 @@ func (f *Frame) IsMegaBox() (x1, y1, x2, y2 int, ok bool) {
 		return true
 	}
 
-	cols, rows := int(f.Header.Columns)-1, int(f.Header.Rows)-1
+	cols, rows := f.Width()-1, f.Height()-1
 
 	for x1 = 0; x1 <= cols; x1++ {
 		for y1 = 0; y1 <= rows; y1++ {
-			c := f.Character(x1, y1)
-			a := f.Attribute(x1, y1)
-			if c.Rune() != '╔' || a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+			if f.Rune(x1, y1) != '╔' ||
+				f.Fg(x1, y1) != termbox.ColorBlack|termbox.AttrBold ||
+				f.Bg(x1, y1) != termbox.ColorBlack {
 				continue
 			}
 
 			// Found a possible top left corner.
 			// Try to find the bottom left corner.
 			for y2 = y1 + 1; y2 <= rows; y2++ {
-				c = f.Character(x1, y2)
-				a = f.Attribute(x1, y2)
-
-				if a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+				if f.Fg(x1, y2) != termbox.ColorBlack|termbox.AttrBold ||
+					f.Bg(x1, y2) != termbox.ColorBlack {
 					break
 				}
-				if c.Rune() == '║' {
+				if f.Rune(x1, y2) == '║' {
 					continue
 				}
-				if c.Rune() != '╚' {
+				if f.Rune(x1, y2) != '╚' {
 					break
 				}
 
 				// Found a possible bottom left corner.
 				// Try to find the top right corner.
 				for x2 = x1 + 1; x2 <= cols; x2++ {
-					c = f.Character(x2, y1)
-					a = f.Attribute(x2, y1)
-
-					if a.Fg() != df2014.ColorDGray || a.Bg() != df2014.ColorBlack {
+					if f.Fg(x2, y1) != termbox.ColorBlack|termbox.AttrBold ||
+						f.Bg(x2, y1) != termbox.ColorBlack {
 						break
 					}
-					if c.Rune() == '═' {
+					if f.Rune(x2, y1) == '═' {
 						continue
 					}
-					if c.Rune() != '╗' {
+					if f.Rune(x2, y1) != '╗' {
 						break
 					}
 
@@ -336,14 +315,12 @@ func (f *Frame) IsMegaBox() (x1, y1, x2, y2 int, ok bool) {
 	return
 }
 
-func (f *Frame) TranscribeMegaBox(x1, y1, x2, y2 int) string {
+func transcribeMegaBox(f *cmv.Frame, x1, y1, x2, y2 int) string {
 	var box []rune
 	for y := y1 + 1; y < y2; y++ {
 		for x := x1 + 1; x < x2; x++ {
-			c := f.Character(x, y)
-
-			if c.Rune() != 0 && (c.Rune() != ' ' || len(box) == 0 || box[len(box)-1] != ' ') {
-				box = append(box, c.Rune())
+			if ch := f.Rune(x, y); ch != 0 && (ch != ' ' || len(box) == 0 || box[len(box)-1] != ' ') {
+				box = append(box, ch)
 			}
 		}
 	}

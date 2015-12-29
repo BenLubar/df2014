@@ -63,6 +63,12 @@ var data = []struct {
 		Type:  Zip,
 	},
 	{
+		URL:   "http://dffd.bay12games.com/download.php?id=6190&f=EndOfSkyscrapes.zip",
+		Sub:   "",
+		Store: "dffd_0006190",
+		Type:  Zip,
+	},
+	{
 		URL:   "http://dffd.bay12games.com/download.php?id=6331&f=save.zip",
 		Sub:   "region2",
 		Store: "dffd_0006331",
