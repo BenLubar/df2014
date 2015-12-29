@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,10 +13,10 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-type Key struct {
-	Index  int
-	Width  int
-	Height int
+type keyframe struct {
+	frame  int
+	width  int
+	height int
 }
 
 var termboxColors = [...]termbox.Attribute{
@@ -29,27 +30,154 @@ var termboxColors = [...]termbox.Attribute{
 	termbox.ColorWhite,
 }
 
-func main() {
-	f, err := os.Open(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
+func usage() {
+	fmt.Fprintln(os.Stderr, "Usage:", os.Args[0], "filename.cmv")
+	fmt.Fprintln(os.Stderr, "use arrow keys to move the bottom right corner of the current frame.")
+	fmt.Fprintln(os.Stderr, "press esc to save to last_record.cmv and exit.")
+	fmt.Fprintln(os.Stderr, "delete/page down/end go forward by 1/100/10000 frames.")
+	fmt.Fprintln(os.Stderr, "insert/page up/home go back by 1/100/10000 frames.")
+	fmt.Fprintln(os.Stderr, "backspace deletes the last keyframe, allowing you to move back if you made a mistake.")
+	os.Exit(2)
+}
 
-	var h cmv.Header
+type fatal struct {
+	text string
+	err  error
+}
+
+func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			f := r.(fatal)
+			fmt.Fprintln(os.Stderr, f.text, f.err)
+			os.Exit(1)
+		}
+	}()
+
+	if len(os.Args) != 2 {
+		usage()
+	}
+
+	h, sounds, rest := load(os.Args[1])
+
+	size := &keyframe{
+		frame:  0,
+		width:  int(h.Width),
+		height: int(h.Height),
+	}
+	sizes := []*keyframe{size}
+	frame := 0
+	index := 0
+
+	if err := termbox.Init(); err != nil {
+		panic(fatal{"error initializing UI:", err})
+	}
+	defer termbox.Close()
+
+	step := func(diff int) {
+		if frame+diff < size.frame {
+			diff = size.frame - frame
+		}
+		frame += diff
+		index += diff * size.width * size.height * 2
+	}
+	move := func(dx, dy int) {
+		if size.width+dx < 1 || size.height+dy < 1 {
+			return
+		}
+		if size.frame != frame {
+			size = &keyframe{
+				frame:  frame,
+				width:  size.width,
+				height: size.height,
+			}
+			sizes = append(sizes, size)
+		}
+		size.width += dx
+		size.height += dy
+	}
+
+	for {
+		render(size, index, rest)
+
+		switch e := termbox.PollEvent(); e.Type {
+		case termbox.EventError:
+			panic(fatal{"termbox error:", e.Err})
+
+		case termbox.EventKey:
+			if e.Ch == 0 {
+				switch e.Key {
+				case termbox.KeyEsc:
+					f, err := os.Create("last_record.cmv")
+					if err == nil {
+						err = save(f, h, sounds, rest, sizes)
+					}
+					if err == nil {
+						err = f.Close()
+					}
+					if err != nil {
+						panic(fatal{"could not write output:", err})
+					}
+					return
+
+				case termbox.KeyHome:
+					step(-10000)
+				case termbox.KeyPgup:
+					step(-100)
+				case termbox.KeyInsert:
+					step(-1)
+				case termbox.KeyDelete:
+					step(1)
+				case termbox.KeyPgdn:
+					step(100)
+				case termbox.KeyEnd:
+					step(10000)
+
+				case termbox.KeyArrowLeft:
+					move(-1, 0)
+				case termbox.KeyArrowRight:
+					move(1, 0)
+				case termbox.KeyArrowUp:
+					move(0, -1)
+				case termbox.KeyArrowDown:
+					move(0, 1)
+
+				case termbox.KeyBackspace2:
+					if len(sizes) != 1 {
+						count := frame - size.frame
+						index -= count * size.width * size.height
+						sizes = sizes[:len(sizes)-1]
+						size = sizes[len(sizes)-1]
+						index += count * size.width * size.height
+					}
+				}
+			}
+		}
+	}
+}
+
+func load(name string) (h cmv.Header, sounds, rest []byte) {
+	f, err := os.Open(name)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		usage()
+	}
+	defer func() {
+		if err = f.Close(); err != nil {
+			panic(fatal{"error closing CMV:", err})
+		}
+	}()
 
 	err = binary.Read(f, binary.LittleEndian, &h)
 	if err != nil {
-		panic(err)
+		panic(fatal{"CMV format error in header:", err})
 	}
-
-	var sounds []byte
 
 	if h.Version >= 10001 {
 		var n uint32
 		err = binary.Read(f, binary.LittleEndian, &n)
 		if err != nil {
-			panic(err)
+			panic(fatal{"CMV format error in sound list:", err})
 		}
 
 		sounds = make([]byte, 4+n*50+200*16*4)
@@ -57,168 +185,25 @@ func main() {
 
 		_, err = io.ReadFull(f, sounds[4:])
 		if err != nil {
-			panic(err)
+			panic(fatal{"CMV format error in sound list:", err})
 		}
 	}
 
-	rest, err := ioutil.ReadAll(cmv.NewCompression1Reader(f))
+	rest, err = ioutil.ReadAll(cmv.NewCompression1Reader(f))
 	if err != nil {
-		panic(err)
+		panic(fatal{"CMV decompression error:", err})
 	}
 
-	size := &Key{
-		Index:  0,
-		Width:  int(h.Width),
-		Height: int(h.Height),
-	}
-	sizes := []*Key{size}
-	frame := 0
-	index := 0
-
-	err = termbox.Init()
-	if err != nil {
-		panic(err)
-	}
-	defer termbox.Close()
-
-	for {
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-		for y := 0; y < size.Height; y++ {
-			for x := 0; x < size.Width; x++ {
-				i := index + size.Height*x + y
-				j := i + size.Width*size.Height
-
-				ch, fg, bg := rune(0), termbox.ColorDefault, termbox.ColorDefault
-				if i < len(rest) {
-					ch = cp437.Rune(rest[i])
-				}
-				if j < len(rest) {
-					fg = termboxColors[rest[j]&7]
-					if rest[j]&(1<<6) != 0 {
-						fg |= termbox.AttrBold
-					}
-					bg = termboxColors[(rest[j]>>3)&7]
-				}
-
-				termbox.SetCell(x, y, ch, fg, bg)
-			}
-		}
-		termbox.Flush()
-
-		switch e := termbox.PollEvent(); e.Type {
-		case termbox.EventError:
-			panic(e.Err)
-
-		case termbox.EventKey:
-			if e.Ch == 0 {
-				switch e.Key {
-				case termbox.KeyEsc:
-					f, err := os.Create("last_record.cmv")
-					if err != nil {
-						panic(err)
-					}
-					defer f.Close()
-					save(f, h, sounds, rest, sizes)
-					return
-
-				case termbox.KeyHome:
-					for i := 0; i < 10000; i++ {
-						if frame == size.Index {
-							break
-						}
-						frame--
-						index -= size.Width * size.Height * 2
-					}
-				case termbox.KeyPgup:
-					for i := 0; i < 100; i++ {
-						if frame == size.Index {
-							break
-						}
-						frame--
-						index -= size.Width * size.Height * 2
-					}
-				case termbox.KeyInsert:
-					if frame != size.Index {
-						frame--
-						index -= size.Width * size.Height * 2
-					}
-				case termbox.KeyDelete:
-					frame++
-					index += size.Width * size.Height * 2
-				case termbox.KeyPgdn:
-					frame += 100
-					index += 100 * size.Width * size.Height * 2
-				case termbox.KeyEnd:
-					frame += 10000
-					index += 10000 * size.Width * size.Height * 2
-
-				case termbox.KeyArrowLeft:
-					if size.Index != frame {
-						size = &Key{
-							Index:  frame,
-							Width:  size.Width,
-							Height: size.Height,
-						}
-						sizes = append(sizes, size)
-					}
-					if size.Width != 1 {
-						size.Width--
-					}
-				case termbox.KeyArrowRight:
-					if size.Index != frame {
-						size = &Key{
-							Index:  frame,
-							Width:  size.Width,
-							Height: size.Height,
-						}
-						sizes = append(sizes, size)
-					}
-					size.Width++
-				case termbox.KeyArrowUp:
-					if size.Index != frame {
-						size = &Key{
-							Index:  frame,
-							Width:  size.Width,
-							Height: size.Height,
-						}
-						sizes = append(sizes, size)
-					}
-					if size.Height != 1 {
-						size.Height--
-					}
-				case termbox.KeyArrowDown:
-					if size.Index != frame {
-						size = &Key{
-							Index:  frame,
-							Width:  size.Width,
-							Height: size.Height,
-						}
-						sizes = append(sizes, size)
-					}
-					size.Height++
-
-				case termbox.KeyBackspace2:
-					if len(sizes) != 1 {
-						count := frame - size.Index
-						index -= count * size.Width * size.Height
-						sizes = sizes[:len(sizes)-1]
-						size = sizes[len(sizes)-1]
-						index += count * size.Width * size.Height
-					}
-				}
-			}
-		}
-	}
-	_ = sizes
+	return
 }
 
-func save(w io.Writer, h cmv.Header, sounds, rest []byte, sizes []*Key) error {
+func save(w io.Writer, h cmv.Header, sounds, rest []byte, sizes []*keyframe) error {
 	for _, size := range sizes {
-		if size.Width > int(h.Width) {
-			h.Width = uint32(size.Width)
+		if size.width > int(h.Width) {
+			h.Width = uint32(size.width)
 		}
-		if size.Height > int(h.Height) {
-			h.Height = uint32(size.Height)
+		if size.height > int(h.Height) {
+			h.Height = uint32(size.height)
 		}
 	}
 
@@ -234,20 +219,23 @@ func save(w io.Writer, h cmv.Header, sounds, rest []byte, sizes []*Key) error {
 	bw := bufio.NewWriterSize(cmv.NewCompression1Writer(w), int(h.Width*h.Height)*2*200)
 
 	frame := -1
-	var key *Key
+	var key *keyframe
 	for len(rest) != 0 {
 		frame++
-		if len(sizes) != 0 && sizes[0].Index == frame {
+		if len(sizes) != 0 && sizes[0].frame == frame {
 			key = sizes[0]
 			sizes = sizes[1:]
+		}
+		if frame%100 == 0 {
+			render(key, 0, rest)
 		}
 
 		var last bool
 
 		for z := 0; z < 2; z++ {
-			for x := 0; x < key.Width; x++ {
-				for y := 0; y < key.Height; y++ {
-					i := key.Height*x + y
+			for x := 0; x < key.width; x++ {
+				for y := 0; y < key.height; y++ {
+					i := key.height*x + y
 
 					if i < len(rest) {
 						err = bw.WriteByte(rest[i])
@@ -259,14 +247,14 @@ func save(w io.Writer, h cmv.Header, sounds, rest []byte, sizes []*Key) error {
 						return err
 					}
 				}
-				for y := key.Height; y < int(h.Height); y++ {
+				for y := key.height; y < int(h.Height); y++ {
 					err = bw.WriteByte(0)
 					if err != nil {
 						return err
 					}
 				}
 			}
-			for x := key.Width; x < int(h.Width); x++ {
+			for x := key.width; x < int(h.Width); x++ {
 				for y := 0; y < int(h.Height); y++ {
 					err = bw.WriteByte(0)
 					if err != nil {
@@ -277,10 +265,39 @@ func save(w io.Writer, h cmv.Header, sounds, rest []byte, sizes []*Key) error {
 			if last {
 				rest = nil
 			} else {
-				rest = rest[key.Width*key.Height:]
+				rest = rest[key.width*key.height:]
 			}
 		}
 	}
 
 	return bw.Flush()
+}
+
+func render(size *keyframe, index int, rest []byte) {
+	if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
+		panic(fatal{"graphics error:", err})
+	}
+	for y := 0; y < size.height; y++ {
+		for x := 0; x < size.width; x++ {
+			i := index + size.height*x + y
+			j := i + size.width*size.height
+
+			ch, fg, bg := rune(0), termbox.ColorDefault, termbox.ColorDefault
+			if i < len(rest) {
+				ch = cp437.Rune(rest[i])
+			}
+			if j < len(rest) {
+				fg = termboxColors[rest[j]&7]
+				if rest[j]&(1<<6) != 0 {
+					fg |= termbox.AttrBold
+				}
+				bg = termboxColors[(rest[j]>>3)&7]
+			}
+
+			termbox.SetCell(x, y, ch, fg, bg)
+		}
+	}
+	if err := termbox.Flush(); err != nil {
+		panic(fatal{"graphics error:", err})
+	}
 }
