@@ -128,8 +128,12 @@ func (f *Frame) Width() int { return int(f.r.Width) }
 // Height returns the Height field of the Reader that created this Frame.
 func (f *Frame) Height() int { return int(f.r.Height) }
 
+// Byte returns the CP437-encoded character on tile (x, y), where 0≤x<Width and
+// 0≤y<Height.
+func (f *Frame) Byte(x, y int) byte { return f.b[x*f.Height()+y] }
+
 // Rune returns the character on tile (x, y), where 0≤x<Width and 0≤y<Height.
-func (f *Frame) Rune(x, y int) rune { return cp437.Rune(f.b[x*f.Height()+y]) }
+func (f *Frame) Rune(x, y int) rune { return cp437.Rune(f.Byte(x, y)) }
 
 // Equal returns true if f and o are from the same reader and have the same
 // characters and colors for each tile.

@@ -15,6 +15,13 @@ import (
 	"io"
 )
 
+// Section indicators.
+const (
+	sExtension       = 0x21
+	sImageDescriptor = 0x2C
+	sTrailer         = 0x3B
+)
+
 // Graphic control extension fields.
 const (
 	gcLabel     = 0xF9
