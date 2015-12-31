@@ -104,6 +104,12 @@ var data = []struct {
 		Store: "dffd_0010619",
 		Type:  Zip,
 	},
+	{
+		URL:   "http://dffd.bay12games.com/download.php?id=11577&f=skyscrapesEnd3_fixed.cmv",
+		Sub:   "",
+		Store: "dffd_0011577/skyscrapesEnd3_fixed.cmv",
+		Type:  Raw,
+	},
 }
 
 func Zip(r io.ReadCloser, sub, store string) error {
@@ -141,6 +147,24 @@ func Zip(r io.ReadCloser, sub, store string) error {
 	}
 
 	return nil
+}
+
+func Raw(r io.ReadCloser, sub, store string) error {
+	store = filepath.Join("testdata", store)
+	err := os.MkdirAll(filepath.Dir(store), 0755)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	f, err := os.Create(store)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, r)
+	return err
 }
 
 func main() {
