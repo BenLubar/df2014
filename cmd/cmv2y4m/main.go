@@ -2,76 +2,134 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
-	"github.com/BenLubar/df2014"
-	"github.com/BenLubar/job"
 	"image"
+	"image/color"
 	_ "image/png"
+	"io"
 	"log"
 	"os"
-	"runtime"
+	"strings"
 	"time"
+
+	"github.com/BenLubar/df2014/cmd/internal/tileset"
+	"github.com/BenLubar/df2014/cmv"
 )
 
 var (
-	flagBuffer     = flag.Int("b", 0, "number of frames to go ahead")
+	flagSpeed      = flag.Float64("s", 1, "speed multiplier")
 	flagTileset    = flag.String("t", "", "path to a tileset")
-	flagSkipHeader = flag.Bool("skip-header", false, "skip the output header and just encode the frames")
-	flagSkipFrames = flag.Int("skip-frames", 0, "")
+	flagInput      = flag.String("i", "input.cmv", "path to a cmv file")
+	flagOutput     = flag.String("o", "output.y4m", "path to write the output")
+	flagSkipHeader = flag.Bool("skip-header", false, "don't output Y4M header")
 )
 
 func main() {
 	flag.Parse()
 
-	moviech := make(chan *df2014.CMVStream)
-	go func() {
-		var (
-			movie df2014.CMVStream
-			err   error
-		)
-		if flag.NArg() == 0 {
-			movie, err = df2014.StreamCMV(os.Stdin, *flagBuffer)
-		} else {
-			movie, err = CombineCMV(flag.Args()...)
+	switch flag.NArg() {
+	case 0:
+		// do nothing
+	case 1:
+		if *flagInput == "input.cmv" && *flagOutput == "output.y4m" && strings.HasSuffix(flag.Arg(0), ".cmv") {
+			*flagInput = flag.Arg(0)
+			*flagOutput = strings.TrimSuffix(flag.Arg(0), ".cmv") + ".y4m"
+			break
 		}
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Println("opened cmv")
-		moviech <- &movie
-	}()
-
-	tilesetch := make(chan *Tileset)
-	go func() {
-		tileset, err := NewTilesetFromFile(*flagTileset)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Println("loaded tileset", *flagTileset)
-		tilesetch <- tileset
-	}()
-
-	tileset, movie := <-tilesetch, <-moviech
-
-	frameDuration := movie.Header.FrameTime
-	delay := int(frameDuration / (10 * time.Millisecond))
-
-	if delay <= 0 {
-		delay, frameDuration = 2, 20*time.Millisecond
+		fallthrough
+	default:
+		flag.Usage()
+		os.Exit(1)
 	}
+
+	tileset, err := tileset.NewTilesetFromFile(*flagTileset)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	palette := make([]color.YCbCr, len(tileset.Palette()))
+	for i := range palette {
+		palette[i] = color.YCbCrModel.Convert(tileset.Palette()[i]).(color.YCbCr)
+	}
+
+	log.Println("loaded tileset", *flagTileset)
+
+	in, err := os.Open(*flagInput)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer in.Close()
+
+	movie, err := cmv.NewReader(in)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("opened cmv", *flagInput)
+
+	delay := int(movie.Header.FrameTime().Seconds() * 100 / *flagSpeed)
+	if delay <= 0 {
+		delay = 1
+	}
+
+	frameDuration := time.Duration(delay) * 10 * time.Millisecond
 
 	log.Println("time per frame:", frameDuration)
 
-	frames := make(chan *image.YCbCr, *flagBuffer)
+	cols, rows := int(movie.Width), int(movie.Height)
+	size := tileset.Size()
+	frameSize := image.Rect(0, 0, size.X*cols, size.Y*rows)
+	tileSize := image.Rect(0, 0, size.X, size.Y)
 
-	go Multiplex(movie, frames, tileset, frameDuration)
+	frames := make(chan *image.YCbCr)
 
-	w := bufio.NewWriter(os.Stdout)
+	go func() {
+		var lastLog time.Time
 
-	err := EncodeAll(w, frames, delay)
+		i := 0
+
+		defer func() {
+			log.Println("finished encoding", i, "frames,", time.Duration(i)*frameDuration)
+			close(frames)
+		}()
+
+		for {
+			frame, err := movie.Frame()
+			if err != nil {
+				if err != io.EOF {
+					log.Println(err)
+				}
+				return
+			}
+			i++
+
+			img := image.NewYCbCr(frameSize, image.YCbCrSubsampleRatio444)
+
+			for x := 0; x < frame.Width(); x++ {
+				for y := 0; y < frame.Height(); y++ {
+					rect := tileSize.Add(image.Pt(size.X*x, size.Y*y))
+					tile := tileset.Tile(frame.Byte(x, y), frame.Fg(x, y), frame.Bg(x, y))
+					fastDraw(img, rect, tile, tile.Rect.Min, palette)
+				}
+			}
+			frames <- img
+
+			if time.Since(lastLog) >= time.Second {
+				lastLog = time.Now()
+				log.Println("encoding frames...", i, "encoded,", time.Duration(i)*frameDuration)
+			}
+		}
+	}()
+
+	f, err := os.Create(*flagOutput)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+
+	err = EncodeAll(w, frames, delay)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,100 +140,19 @@ func main() {
 	}
 }
 
-func Multiplex(movie *df2014.CMVStream, completed chan<- *image.YCbCr, tileset *Tileset, frameDuration time.Duration) {
-	input := make(chan interface{}, *flagBuffer)
+func fastDraw(dst *image.YCbCr, r image.Rectangle, src *image.Paletted, sp image.Point, palette []color.YCbCr) {
+	pixY, strideY := dst.Y[dst.YOffset(r.Min.X, r.Min.Y):], dst.YStride
+	pixCb, strideCb := dst.Cb[dst.COffset(r.Min.X, r.Min.Y):], dst.CStride
+	pixCr, strideCr := dst.Cr[dst.COffset(r.Min.X, r.Min.Y):], dst.CStride
+	pixSrc, strideSrc := src.Pix[src.PixOffset(sp.X, sp.Y):], src.Stride
 
-	cols, rows := int(movie.Header.Columns), int(movie.Header.Rows)
-	frameSize := image.Rect(0, 0, tileset.size.X*cols, tileset.size.Y*rows)
-	tileSize := image.Rect(0, 0, tileset.size.X, tileset.size.Y)
-
-	go func() {
-		defer close(input)
-
-		for i := 0; i < *flagSkipFrames; i++ {
-			<-movie.Frames
-			if i%10000 == 9999 {
-				log.Println("skipped", i+1, "/", *flagSkipFrames, "frames")
-			}
-		}
-
-		for frame := range movie.Frames {
-			input <- frame
-		}
-	}()
-
-	output := job.Work(input, &job.Options{
-		Work: func(v interface{}) interface{} {
-			in, out := v.(df2014.CMVFrame), image.NewYCbCr(frameSize, image.YCbCrSubsampleRatio444)
-
-			for x, col := range in.Attributes {
-				for y, attr := range col {
-					rect := tileSize.Add(image.Pt(tileset.size.X*x, tileset.size.Y*y))
-					tile := tileset.Tile(in.Characters[x][y], attr)
-					fastDraw(out, rect, tile, tile.Bounds().Min)
-				}
-			}
-
-			return out
-		},
-		NumWorkers: runtime.GOMAXPROCS(0),
-		MaxWaiting: *flagBuffer,
-	})
-
-	defer close(completed)
-
-	var lastLog time.Time
-	var seq int
-	for out := range output {
-		seq++
-		completed <- out.(*image.YCbCr)
-		if time.Since(lastLog) >= time.Second {
-			lastLog = time.Now()
-			log.Println("encoding frames...", seq, "encoded,", time.Duration(seq)*frameDuration)
+	dx, dy := r.Dx(), r.Dy()
+	for y := 0; y < dy; y++ {
+		for x := 0; x < dx; x++ {
+			c := palette[pixSrc[strideSrc*y+x]]
+			pixY[strideY*y+x] = c.Y
+			pixCb[strideCb*y+x] = c.Cb
+			pixCr[strideCr*y+x] = c.Cr
 		}
 	}
-	log.Println("finished encoding", seq, "frames,", time.Duration(seq)*frameDuration)
-}
-
-var ErrHeaderMismatch = errors.New("CMV file headers differ in dimensions, timing, or version")
-
-func CombineCMV(names ...string) (cmv df2014.CMVStream, err error) {
-	movies := make([]df2014.CMVStream, len(names))
-	for i, fn := range names {
-		var f *os.File
-		f, err = os.Open(fn)
-		if err != nil {
-			return
-		}
-
-		// f is closed by StreamCMV
-		movies[i], err = df2014.StreamCMV(f, *flagBuffer)
-		if err != nil {
-			return
-		}
-	}
-
-	cmv.Header = movies[0].Header
-
-	for _, m := range movies[1:] {
-		if m.Header != cmv.Header {
-			err = ErrHeaderMismatch
-			return
-		}
-	}
-
-	frames := make(chan df2014.CMVFrame, *flagBuffer)
-
-	cmv.Frames = frames
-
-	go func() {
-		defer close(frames)
-		for _, m := range movies {
-			for f := range m.Frames {
-				frames <- f
-			}
-		}
-	}()
-
-	return
 }
