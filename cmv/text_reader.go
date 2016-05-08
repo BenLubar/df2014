@@ -79,7 +79,19 @@ func ReadStringListIndex(r io.Reader) ([]string, error) {
 	}, true, false)
 }
 
-// ReadStringListWTF23a reads the format used by Dwarf Fortress before 40d.
+// ReadStringListWTF23a reads the format used by Dwarf Fortress 23a.
 func ReadStringListWTF23a(r io.Reader) ([]string, error) {
 	return readStringList(wtf23a.NewReader(r), nil, false, true)
+}
+
+// ReadStringList40d reads the format used by Dwarf Fortress 40d.
+func ReadStringList40d(r io.Reader) ([]string, error) {
+	return readStringList(NewCompression1Reader(r), nil, false, true)
+}
+
+// ReadStringListIndex40d reads the format used by Dwarf Fortress 40d.
+func ReadStringListIndex40d(r io.Reader) ([]string, error) {
+	return readStringList(NewCompression1Reader(r), func(i int, b byte) byte {
+		return ^b - byte(i%5)
+	}, false, true)
 }

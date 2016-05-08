@@ -70,7 +70,19 @@ func WriteStringListIndex(w io.Writer, l []string) error {
 	}, true, false)
 }
 
-// WriteStringListWTF23a writes the format used by Dwarf Fortress before 40d.
+// WriteStringListWTF23a writes the format used by Dwarf Fortress 23a.
 func WriteStringListWTF23a(w io.Writer, l []string, header func() wtf23a.Header) error {
 	return writeStringList(wtf23a.NewWriter(w, header), l, nil, false, true)
+}
+
+// WriteStringList40d writes the format used by Dwarf Fortress 40d.
+func WriteStringList40d(w io.Writer, l []string) error {
+	return writeStringList(NewCompression1Writer(w), l, nil, false, true)
+}
+
+// WriteStringListIndex40d writes the format used by Dwarf Fortress 40d.
+func WriteStringListIndex40d(w io.Writer, l []string) error {
+	return writeStringList(NewCompression1Writer(w), l, func(i int, b byte) byte {
+		return ^b - byte(i%5)
+	}, false, true)
 }
