@@ -57,7 +57,9 @@ func readStringList(r io.Reader, f func(int, byte) byte, lengthTwice, nullTermin
 			if err != nil {
 				return nil, err
 			}
-			buf[0] = f(len(b), buf[0])
+			if f != nil {
+				buf[0] = f(len(b), buf[0])
+			}
 			if buf[0] != 0 {
 				return nil, fmt.Errorf("cmv: invalid null terminator: %d", buf[0])
 			}
