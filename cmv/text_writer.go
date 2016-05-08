@@ -47,7 +47,7 @@ func writeStringList(w io.Writer, l []string, f func(int, byte) byte, lengthTwic
 		}
 
 		if nullTerminate {
-			err = bw.WriteByte(0)
+			err = bw.WriteByte(f(len(b), 0))
 			if err != nil {
 				return err
 			}
