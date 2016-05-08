@@ -6,10 +6,11 @@ import (
 	"io"
 
 	"github.com/BenLubar/df2014/cp437"
+	"github.com/BenLubar/df2014/wtf23a"
 )
 
 func writeStringList(w io.Writer, l []string, f func(int, byte) byte) error {
-	bw := bufio.NewWriter(NewCompression1Writer(w))
+	bw := bufio.NewWriter(w)
 
 	err := binary.Write(bw, binary.LittleEndian, uint32(len(l)))
 	if err != nil {
@@ -50,12 +51,17 @@ func writeStringList(w io.Writer, l []string, f func(int, byte) byte) error {
 // WriteStringList writes the format used by Dwarf Fortress's announcement,
 // dipscript, and help files.
 func WriteStringList(w io.Writer, l []string) error {
-	return writeStringList(w, l, nil)
+	return writeStringList(NewCompression1Writer(w), l, nil)
 }
 
 // WriteStringListIndex writes the format used by Dwarf Fortress's index file.
 func WriteStringListIndex(w io.Writer, l []string) error {
-	return writeStringList(w, l, func(i int, b byte) byte {
+	return writeStringList(NewCompression1Writer(w), l, func(i int, b byte) byte {
 		return ^b - byte(i%5)
 	})
+}
+
+// WriteStringListWTF23a writes the format used by Dwarf Fortress before 40d.
+func WriteStringListWTF23a(w io.Writer, l []string, header func() wtf23a.Header) error {
+	return writeStringList(wtf23a.NewWriter(w, header), l, nil)
 }

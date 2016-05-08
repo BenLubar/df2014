@@ -6,12 +6,11 @@ import (
 	"io"
 
 	"github.com/BenLubar/df2014/cp437"
+	"github.com/BenLubar/df2014/wtf23a"
 )
 
 func readStringList(r io.Reader, f func(int, byte) byte) ([]string, error) {
 	var l []string
-
-	r = NewCompression1Reader(r)
 
 	var count uint32
 	err := binary.Read(r, binary.LittleEndian, &count)
@@ -57,12 +56,17 @@ func readStringList(r io.Reader, f func(int, byte) byte) ([]string, error) {
 // ReadStringList reads the format used by Dwarf Fortress's announcement,
 // dipscript, and help files.
 func ReadStringList(r io.Reader) ([]string, error) {
-	return readStringList(r, nil)
+	return readStringList(NewCompression1Reader(r), nil)
 }
 
 // ReadStringListIndex reads the format used by Dwarf Fortress's index file.
 func ReadStringListIndex(r io.Reader) ([]string, error) {
-	return readStringList(r, func(i int, b byte) byte {
+	return readStringList(NewCompression1Reader(r), func(i int, b byte) byte {
 		return ^b - byte(i%5)
 	})
+}
+
+// ReadStringListWTF23a reads the format used by Dwarf Fortress before 40d.
+func ReadStringListWTF23a(r io.Reader) ([]string, error) {
+	return readStringList(wtf23a.NewReader(r), nil)
 }
