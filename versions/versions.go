@@ -124,6 +124,7 @@ var Versions = map[Version]string{
 	1542: "0.42.06",
 
 	1551: "0.43.01",
+	1552: "0.43.02",
 }
 
 // IsKnown returns true if v is a known version number.
