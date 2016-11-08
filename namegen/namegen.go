@@ -66,7 +66,7 @@ type Adjective struct {
 	RearCompound  bool
 }
 
-var words []*Word
+var Words []*Word
 var wordsMap = make(map[string]*Word)
 
 var nouns, fronts, rears []*Word
@@ -88,21 +88,21 @@ func init() {
 				w := &Word{
 					ID: tok[1],
 				}
-				words = append(words, w)
+				Words = append(Words, w)
 				wordsMap[tok[1]] = w
 			case "NOUN":
-				w := words[len(words)-1]
+				w := Words[len(Words)-1]
 				w.Noun = &Noun{
 					Singular: tok[1],
 					Plural:   tok[2],
 				}
 			case "PREFIX":
-				w := words[len(words)-1]
+				w := Words[len(Words)-1]
 				w.Prefix = &Prefix{
 					Prefix: tok[1],
 				}
 			case "VERB":
-				w := words[len(words)-1]
+				w := Words[len(Words)-1]
 				w.Verb = &Verb{
 					PresentFirst: tok[1],
 					PresentThird: tok[2],
@@ -111,48 +111,48 @@ func init() {
 					PresentPart:  tok[5],
 				}
 			case "ADJ":
-				w := words[len(words)-1]
+				w := Words[len(Words)-1]
 				w.Adjective = &Adjective{
 					Adjective: tok[1],
 				}
 			case "ADJ_DIST":
-				w := words[len(words)-1]
+				w := Words[len(Words)-1]
 				w.Adjective.Distance, err = strconv.Atoi(tok[1])
 				if err != nil {
 					panic(err)
 				}
 			case "FRONT_COMPOUND_NOUN_SING":
-				words[len(words)-1].Noun.FrontCompoundSingular = true
+				Words[len(Words)-1].Noun.FrontCompoundSingular = true
 			case "FRONT_COMPOUND_NOUN_PLUR":
-				words[len(words)-1].Noun.FrontCompoundPlural = true
+				Words[len(Words)-1].Noun.FrontCompoundPlural = true
 			case "REAR_COMPOUND_NOUN_SING":
-				words[len(words)-1].Noun.RearCompoundSingular = true
+				Words[len(Words)-1].Noun.RearCompoundSingular = true
 			case "REAR_COMPOUND_NOUN_PLUR":
-				words[len(words)-1].Noun.RearCompoundPlural = true
+				Words[len(Words)-1].Noun.RearCompoundPlural = true
 			case "THE_COMPOUND_NOUN_SING":
-				words[len(words)-1].Noun.TheCompoundSingular = true
+				Words[len(Words)-1].Noun.TheCompoundSingular = true
 			case "THE_COMPOUND_NOUN_PLUR":
-				words[len(words)-1].Noun.TheCompoundPlural = true
+				Words[len(Words)-1].Noun.TheCompoundPlural = true
 			case "THE_NOUN_SING":
-				words[len(words)-1].Noun.TheSingular = true
+				Words[len(Words)-1].Noun.TheSingular = true
 			case "THE_NOUN_PLUR":
-				words[len(words)-1].Noun.ThePlural = true
+				Words[len(Words)-1].Noun.ThePlural = true
 			case "OF_NOUN_SING":
-				words[len(words)-1].Noun.OfSingular = true
+				Words[len(Words)-1].Noun.OfSingular = true
 			case "OF_NOUN_PLUR":
-				words[len(words)-1].Noun.OfPlural = true
+				Words[len(Words)-1].Noun.OfPlural = true
 			case "FRONT_COMPOUND_PREFIX":
-				words[len(words)-1].Prefix.FrontCompound = true
+				Words[len(Words)-1].Prefix.FrontCompound = true
 			case "THE_COMPOUND_PREFIX":
-				words[len(words)-1].Prefix.TheCompound = true
+				Words[len(Words)-1].Prefix.TheCompound = true
 			case "STANDARD_VERB":
-				words[len(words)-1].Verb.Standard = true
+				Words[len(Words)-1].Verb.Standard = true
 			case "FRONT_COMPOUND_ADJ":
-				words[len(words)-1].Adjective.FrontCompound = true
+				Words[len(Words)-1].Adjective.FrontCompound = true
 			case "REAR_COMPOUND_ADJ":
-				words[len(words)-1].Adjective.RearCompound = true
+				Words[len(Words)-1].Adjective.RearCompound = true
 			case "THE_COMPOUND_ADJ":
-				words[len(words)-1].Adjective.TheCompound = true
+				Words[len(Words)-1].Adjective.TheCompound = true
 			default:
 				panic(tok[0])
 			}
@@ -191,7 +191,7 @@ func init() {
 		}()
 	}
 
-	for _, w := range words {
+	for _, w := range Words {
 		if w.Noun != nil {
 			nouns = append(nouns, w)
 		}
