@@ -15,13 +15,17 @@ import (
 func main() {
 	flag.Parse()
 
+	var total time.Duration
+
 	for _, name := range flag.Args() {
 		fmt.Println(name)
-		length(name)
+		total += length(name)
 	}
+
+	fmt.Println("total:", total)
 }
 
-func length(name string) {
+func length(name string) time.Duration {
 	f, err := os.Open(name)
 	if err != nil {
 		panic(err)
@@ -46,5 +50,9 @@ func length(name string) {
 		fmt.Print(i, "\r")
 	}
 
-	fmt.Println(i, "frames (", time.Second/50*time.Duration(i), ")")
+	t := time.Second / 50 * time.Duration(i)
+
+	fmt.Println(i, "frames (", t, ")")
+
+	return t
 }

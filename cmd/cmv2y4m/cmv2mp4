@@ -1,0 +1,8 @@
+#!/bin/bash
+
+(noheader=
+for f in "$@"
+do
+	./cmv2y4m -i "$f" -o /dev/stdout $noheader 2> /dev/null
+	noheader=' --no-header'
+done) | ffmpeg -i - -c:v libx264 -preset ultrafast -pix_fmt yuv420p video.mp4

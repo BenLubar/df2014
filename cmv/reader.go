@@ -24,42 +24,9 @@ type Reader struct {
 func NewReader(r io.Reader) (*Reader, error) {
 	var cmv Reader
 
-	err := binary.Read(r, binary.LittleEndian, &cmv.Header)
+	err := ReadHeader(r, &cmv.Header, &cmv.Sounds)
 	if err != nil {
 		return nil, err
-	}
-
-	if cmv.Version < 10000 || cmv.Version > 10001 {
-		return nil, fmt.Errorf("cmv: unhandled version %d", cmv.Version)
-	}
-
-	if cmv.Version >= 10001 {
-		cmv.Sounds = new(Sounds)
-
-		var n uint32
-		err = binary.Read(r, binary.LittleEndian, &n)
-		if err != nil {
-			return nil, err
-		}
-
-		cmv.Sounds.Files = make([]string, n)
-
-		var buf [50]byte
-		for i := range cmv.Sounds.Files {
-			_, err = io.ReadFull(r, buf[:])
-			if err != nil {
-				if err == io.EOF {
-					err = io.ErrUnexpectedEOF
-				}
-				return nil, err
-			}
-			cmv.Sounds.Files[i] = string(buf[:bytes.IndexByte(buf[:], 0)])
-		}
-
-		err = binary.Read(r, binary.LittleEndian, &cmv.Sounds.Timing)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	cmv.r = NewCompression1Reader(r)
@@ -67,9 +34,58 @@ func NewReader(r io.Reader) (*Reader, error) {
 	return &cmv, nil
 }
 
+// ReadHeader reads a CMV header from a file.
+func ReadHeader(r io.Reader, header *Header, sounds **Sounds) error {
+	err := binary.Read(r, binary.LittleEndian, header)
+	if err != nil {
+		return err
+	}
+
+	if header.Version < 10000 || header.Version > 10001 {
+		return fmt.Errorf("cmv: unhandled version %d", header.Version)
+	}
+
+	if header.Version >= 10001 {
+		*sounds = new(Sounds)
+
+		var n uint32
+		err = binary.Read(r, binary.LittleEndian, &n)
+		if err != nil {
+			if err == io.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			return err
+		}
+
+		(*sounds).Files = make([]string, n)
+
+		var buf [50]byte
+		for i := range (*sounds).Files {
+			_, err = io.ReadFull(r, buf[:])
+			if err != nil {
+				if err == io.EOF {
+					err = io.ErrUnexpectedEOF
+				}
+				return err
+			}
+			(*sounds).Files[i] = string(buf[:bytes.IndexByte(buf[:], 0)])
+		}
+
+		err = binary.Read(r, binary.LittleEndian, &(*sounds).Timing)
+		if err != nil {
+			if err == io.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Header is the CMV header.
 type Header struct {
-	// Version is either 10000 (0x2710) or 10001 (0x2701). The latter
+	// Version is either 10000 (0x2710) or 10001 (0x2711). The latter
 	// includes Sounds.
 	Version uint32
 	// Width is the number of columns in each frame of the CMV.
